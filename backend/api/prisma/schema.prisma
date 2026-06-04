@@ -1,0 +1,420 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =======================
+// ENUMS
+// =======================
+
+enum UserRole {
+  PASSENGER
+  DRIVER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum DriverStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum VehicleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum RideStatus {
+  DRAFT
+  PUBLISHED
+  FULL
+  STARTED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  REMOVED_BY_ADMIN
+}
+
+enum BookingStatus {
+  REQUESTED
+  ACCEPTED
+  PAYMENT_PENDING
+  CONFIRMED
+  PASSENGER_CANCELLED
+  DRIVER_CANCELLED
+  COMPLETED
+  NO_SHOW
+  DISPUTED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum NotificationType {
+  BOOKING
+  PAYMENT
+  MESSAGE
+  SYSTEM
+  PROMOTION
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  REJECTED
+}
+
+enum AuthProvider {
+  EMAIL
+  PHONE
+  GOOGLE
+  APPLE
+}
+
+enum VerificationType {
+  EMAIL
+  PHONE
+}
+
+enum VerificationPurpose {
+  VERIFY_ACCOUNT
+  RESET_PASSWORD
+  LOGIN
+}
+
+// =======================
+// USERS
+// =======================
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String?
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String?
+  role         UserRole @default(PASSENGER)
+  isActive     Boolean  @default(true)
+
+  isEmailVerified Boolean @default(false)
+  isPhoneVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driverProfile DriverProfile?
+  rides         Ride[]         @relation("DriverRides")
+  bookings      Booking[]
+
+  conversations ConversationParticipant[]
+  messages      Message[]
+
+  notifications Notification[]
+
+  reviewsGiven    Review[] @relation("ReviewsGiven")
+  reviewsReceived Review[] @relation("ReviewsReceived")
+
+  reportsMade     Report[] @relation("ReportsMade")
+  reportsReceived Report[] @relation("ReportsReceived")
+
+  accounts          AuthAccount[]
+  verificationCodes VerificationCode[]
+
+  auditLogs AuditLog[]
+}
+
+// =======================
+// DRIVERS + VEHICLES
+// =======================
+
+model DriverProfile {
+  id     String       @id @default(uuid())
+  userId String       @unique
+  status DriverStatus @default(PENDING)
+
+  licenseNumber String?
+  bio           String?
+  yearsDriving  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  vehicles Vehicle[]
+}
+
+model Vehicle {
+  id              String        @id @default(uuid())
+  driverProfileId String
+  plateNumber     String        @unique
+  brand           String
+  model           String
+  color           String
+  year            Int?
+  seats           Int
+  status          VehicleStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+  rides         Ride[]
+}
+
+// =======================
+// RIDES
+// =======================
+
+model Ride {
+  id        String @id @default(uuid())
+  driverId  String
+  vehicleId String
+
+  origin      String
+  destination String
+
+  departureTime        DateTime
+  estimatedArrivalTime DateTime?
+
+  pricePerSeat   Int
+  availableSeats Int
+  totalSeats     Int
+
+  status         RideStatus @default(PUBLISHED)
+  instantBooking Boolean    @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driver  User    @relation("DriverRides", fields: [driverId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  stops         RideStop[]
+  bookings      Booking[]
+  conversations Conversation[]
+}
+
+model RideStop {
+  id        String  @id @default(uuid())
+  rideId    String
+  city      String
+  address   String?
+  stopOrder Int
+
+  createdAt DateTime @default(now())
+
+  ride Ride @relation(fields: [rideId], references: [id])
+
+  @@unique([rideId, stopOrder])
+}
+
+// =======================
+// BOOKINGS + PAYMENTS
+// =======================
+
+model Booking {
+  id          String @id @default(uuid())
+  passengerId String
+  rideId      String
+
+  seatsBooked Int
+  totalAmount Int
+  serviceFee  Int
+
+  status BookingStatus @default(REQUESTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  passenger User @relation(fields: [passengerId], references: [id])
+  ride      Ride @relation(fields: [rideId], references: [id])
+
+  payment Payment?
+  review  Review?
+}
+
+model Payment {
+  id        String @id @default(uuid())
+  bookingId String @unique
+
+  amount    Int
+  reference String        @unique
+  provider  String        @default("PAYSTACK")
+  status    PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+// =======================
+// REAL-TIME MESSAGES
+// =======================
+
+model Conversation {
+  id     String  @id @default(uuid())
+  rideId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ride Ride? @relation(fields: [rideId], references: [id])
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String @id @default(uuid())
+  conversationId String
+  userId         String
+
+  joinedAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String @id @default(uuid())
+  conversationId String
+  senderId       String
+
+  content String
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+}
+
+// =======================
+// NOTIFICATIONS
+// =======================
+
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+
+  title  String
+  body   String
+  type   NotificationType
+  isRead Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// =======================
+// REVIEWS + REPORTS
+// =======================
+
+model Review {
+  id        String @id @default(uuid())
+  bookingId String @unique
+
+  reviewerId String
+  revieweeId String
+
+  rating  Int
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  reviewer User @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  reviewee User @relation("ReviewsReceived", fields: [revieweeId], references: [id])
+}
+
+model Report {
+  id String @id @default(uuid())
+
+  reporterId     String
+  reportedUserId String
+
+  reason  String
+  details String?
+
+  status ReportStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reporter     User @relation("ReportsMade", fields: [reporterId], references: [id])
+  reportedUser User @relation("ReportsReceived", fields: [reportedUserId], references: [id])
+}
+
+// =======================
+// AUDIT LOGS
+// =======================
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  userId String?
+
+  action   String
+  entity   String
+  entityId String?
+
+  metadata  Json?
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model AuthAccount {
+  id String @id @default(uuid())
+
+  userId         String
+  provider       AuthProvider
+  providerUserId String
+
+  email String?
+  phone String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUserId])
+}
+
+model VerificationCode {
+  id String @id @default(uuid())
+
+  userId String?
+  email  String?
+  phone  String?
+
+  codeHash String
+  type     VerificationType
+  purpose  VerificationPurpose
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
