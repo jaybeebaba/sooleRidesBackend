@@ -16,6 +16,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+
 import { RegisterEmailDto } from './dto/register-email.dto';
 import { LoginEmailDto } from './dto/login-email.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
@@ -24,6 +25,7 @@ import { RequestEmailVerificationDto } from './dto/request-email-verification.dt
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestPhoneOtpDto } from './dto/request-phone-otp.dto';
 import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -216,9 +218,7 @@ export class AuthService {
     }
 
     let user = email
-      ? await this.prisma.user.findUnique({
-          where: { email },
-        })
+      ? await this.prisma.user.findUnique({ where: { email } })
       : null;
 
     if (!user) {
@@ -294,9 +294,7 @@ export class AuthService {
         type: VerificationType.EMAIL,
         purpose: VerificationPurpose.VERIFY_ACCOUNT,
         usedAt: null,
-        expiresAt: {
-          gt: new Date(),
-        },
+        expiresAt: { gt: new Date() },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -367,9 +365,7 @@ export class AuthService {
         type: VerificationType.PHONE,
         purpose: VerificationPurpose.LOGIN,
         usedAt: null,
-        expiresAt: {
-          gt: new Date(),
-        },
+        expiresAt: { gt: new Date() },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -397,6 +393,83 @@ export class AuthService {
     return this.authResponse(user);
   }
 
+  async refresh(dto: RefreshTokenDto) {
+    let payload: { sub: string; role: string };
+
+    try {
+      payload = await this.jwtService.verifyAsync(dto.refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const storedTokens = await this.prisma.refreshToken.findMany({
+      where: {
+        userId: payload.sub,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    const matchedToken = await this.findMatchingRefreshToken(
+      dto.refreshToken,
+      storedTokens,
+    );
+
+    if (!matchedToken) {
+      throw new UnauthorizedException('Refresh token not recognized');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: matchedToken.id },
+      data: { revokedAt: new Date() },
+    });
+
+    return this.authResponse(user);
+  }
+
+  async logout(dto: RefreshTokenDto) {
+    let payload: { sub: string; role: string };
+
+    try {
+      payload = await this.jwtService.verifyAsync(dto.refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
+      });
+    } catch {
+      return { message: 'Logged out successfully' };
+    }
+
+    const storedTokens = await this.prisma.refreshToken.findMany({
+      where: {
+        userId: payload.sub,
+        revokedAt: null,
+      },
+    });
+
+    const matchedToken = await this.findMatchingRefreshToken(
+      dto.refreshToken,
+      storedTokens,
+    );
+
+    if (matchedToken) {
+      await this.prisma.refreshToken.update({
+        where: { id: matchedToken.id },
+        data: { revokedAt: new Date() },
+      });
+    }
+
+    return { message: 'Logged out successfully' };
+  }
+
   private async createVerificationCode(params: {
     userId?: string;
     email?: string;
@@ -419,6 +492,21 @@ export class AuthService {
     });
 
     return code;
+  }
+
+  private async findMatchingRefreshToken(
+    plainToken: string,
+    storedTokens: { id: string; tokenHash: string }[],
+  ) {
+    for (const storedToken of storedTokens) {
+      const isValid = await argon2.verify(storedToken.tokenHash, plainToken);
+
+      if (isValid) {
+        return storedToken;
+      }
+    }
+
+    return null;
   }
 
   private async authResponse(user: {
@@ -451,6 +539,14 @@ export class AuthService {
       expiresIn: refreshTokenExpiresIn,
     });
 
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: await argon2.hash(refreshToken),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
     return {
       user: {
         id: user.id,
@@ -465,4 +561,6 @@ export class AuthService {
       refreshToken,
     };
   }
+
+  
 }

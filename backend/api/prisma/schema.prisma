@@ -133,6 +133,7 @@ model User {
   verificationCodes VerificationCode[]
 
   auditLogs AuditLog[]
+  refreshTokens RefreshToken[]
 }
 
 // =======================
@@ -417,4 +418,18 @@ model VerificationCode {
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
+}
+
+
+model RefreshToken {
+  id String @id @default(uuid())
+
+  userId String
+  tokenHash String
+  revokedAt DateTime?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }

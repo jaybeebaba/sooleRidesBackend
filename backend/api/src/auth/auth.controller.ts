@@ -8,6 +8,10 @@ import { RequestEmailVerificationDto } from './dto/request-email-verification.dt
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestPhoneOtpDto } from './dto/request-phone-otp.dto';
 import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
+import { Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -52,4 +56,24 @@ export class AuthController {
   verifyPhoneOtp(@Body() dto: VerifyPhoneOtpDto) {
     return this.authService.verifyPhoneOtp(dto);
   }
+
+  @Get('me')
+@UseGuards(JwtAuthGuard)
+me(@CurrentUser() user: any) {
+  return {
+    user,
+  };
+}
+
+@Post('refresh')
+refresh(@Body() dto: RefreshTokenDto) {
+  return this.authService.refresh(dto);
+}
+
+
+
+@Post('logout')
+logout(@Body() dto: RefreshTokenDto) {
+  return this.authService.logout(dto);
+}
 }

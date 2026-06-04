@@ -15,6 +15,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     ReportsModule,
     AdminModule,
     AuditLogsModule,
+    CommonModule,
   ],
 })
 export class AppModule {}
