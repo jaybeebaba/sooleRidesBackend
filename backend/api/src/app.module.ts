@@ -16,6 +16,10 @@ import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CommonModule } from './common/common.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './common/guards/roles/roles.guard';
+import { PassengersModule } from './passengers/passengers.module';
+
 
 @Module({
   imports: [
@@ -37,6 +41,13 @@ import { CommonModule } from './common/common.module';
     AdminModule,
     AuditLogsModule,
     CommonModule,
+    PassengersModule,
+  ],
+   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
 })
 export class AppModule {}
