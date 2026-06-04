@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards, Post, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
 import { PassengersService } from './passengers.service';
 import { UpdatePassengerProfileDto } from './dto/update-passenger-profile.dto';
+import { CreateSavedRouteDto } from './dto/create-saved-route.dto';
+import { CreateEmergencyContactDto } from './dto/create-emergency-contact.dto';
 
 @Controller('passengers')
 @UseGuards(JwtAuthGuard)
@@ -15,6 +17,8 @@ export class PassengersController {
     return this.passengersService.getMe(user.id);
   }
 
+
+
   @Patch('me')
   updateMe(
     @CurrentUser() user: CurrentUserType,
@@ -22,4 +26,48 @@ export class PassengersController {
   ) {
     return this.passengersService.updateMe(user.id, dto);
   }
+
+  @Get('saved-routes')
+getSavedRoutes(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getSavedRoutes(user.id);
+}
+
+@Post('saved-routes')
+createSavedRoute(
+  @CurrentUser() user: CurrentUserType,
+  @Body() dto: CreateSavedRouteDto,
+) {
+  return this.passengersService.createSavedRoute(user.id, dto);
+}
+
+@Delete('saved-routes/:id')
+deleteSavedRoute(
+  @CurrentUser() user: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.passengersService.deleteSavedRoute(user.id, id);
+}
+
+@Get('emergency-contacts')
+getEmergencyContacts(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getEmergencyContacts(user.id);
+}
+
+@Post('emergency-contacts')
+createEmergencyContact(
+  @CurrentUser() user: CurrentUserType,
+  @Body() dto: CreateEmergencyContactDto,
+) {
+  return this.passengersService.createEmergencyContact(user.id, dto);
+}
+
+@Delete('emergency-contacts/:id')
+deleteEmergencyContact(
+  @CurrentUser() user: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.passengersService.deleteEmergencyContact(user.id, id);
+}
+
+  
 }
