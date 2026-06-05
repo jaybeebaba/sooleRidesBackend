@@ -55,7 +55,11 @@ getAllDrivers() {
   getPendingDrivers() {
     return this.adminService.getPendingDrivers();
   }
-  
+@Get('drivers/:id/vehicles')
+getDriverVehicles(@Param('id') id: string) {
+  return this.adminService.getDriverVehicles(id);
+}
+
 @Get('drivers/:id')
 getDriverById(@Param('id') id: string) {
   return this.adminService.getDriverById(id);
@@ -82,18 +86,40 @@ unsuspendDriver(@Param('id') id: string) {
     return this.adminService.rejectDriver(id);
   }
 
-  @Get('vehicles/pending')
-  getPendingVehicles() {
-    return this.adminService.getPendingVehicles();
-  }
+  
+@Get('vehicles')
+getAllVehicles() {
+  return this.adminService.getAllVehicles();
+}
 
-  @Patch('vehicles/:id/approve')
-  approveVehicle(@Param('id') id: string) {
-    return this.adminService.approveVehicle(id);
-  }
+@Get('vehicles/pending')
+getPendingVehicles() {
+  return this.adminService.getPendingVehicles();
+}
 
-  @Patch('vehicles/:id/reject')
-  rejectVehicle(@Param('id') id: string) {
-    return this.adminService.rejectVehicle(id);
-  }
+@Get('vehicles/:id')
+getVehicleById(@Param('id') id: string) {
+  return this.adminService.getVehicleById(id);
+}
+
+@Patch('vehicles/:id/approve')
+approveVehicle(@Param('id') id: string) {
+  return this.adminService.approveVehicle(id);
+}
+
+@Patch('vehicles/:id/reject')
+rejectVehicle(@Param('id') id: string) {
+  return this.adminService.rejectVehicle(id);
+}
+
+@Patch('vehicles/:id/suspend')
+suspendVehicle(@Param('id') id: string) {
+  return this.adminService.suspendVehicle(id);
+}
+
+@Patch('vehicles/:id/unsuspend')
+unsuspendVehicle(@Param('id') id: string) {
+  return this.adminService.unsuspendVehicle(id);
+}
+ 
 }
