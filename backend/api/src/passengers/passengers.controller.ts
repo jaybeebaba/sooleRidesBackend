@@ -69,5 +69,17 @@ deleteEmergencyContact(
   return this.passengersService.deleteEmergencyContact(user.id, id);
 }
 
+@Get('my-trips')
+getMyTrips(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getMyTrips(user.id);
+}
+
+@Get('my-trips/:id')
+getMyTripById(
+  @CurrentUser() user: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.passengersService.getMyTripById(user.id, id);
+}
   
 }

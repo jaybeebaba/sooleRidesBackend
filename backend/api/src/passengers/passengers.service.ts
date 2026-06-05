@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePassengerProfileDto } from './dto/update-passenger-profile.dto';
-import { NotFoundException } from '@nestjs/common';
 import { CreateSavedRouteDto } from './dto/create-saved-route.dto';
 import { CreateEmergencyContactDto } from './dto/create-emergency-contact.dto';
 
@@ -126,4 +125,129 @@ async deleteEmergencyContact(userId: string, contactId: string) {
   };
 }
 
+async getMyTrips(userId: string) {
+  return this.prisma.booking.findMany({
+    where: {
+      passengerId: userId,
+    },
+    select: {
+      id: true,
+      seatsBooked: true,
+      totalAmount: true,
+      serviceFee: true,
+      status: true,
+      createdAt: true,
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+          estimatedArrivalTime: true,
+          pricePerSeat: true,
+          status: true,
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+          vehicle: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              color: true,
+              plateNumber: true,
+            },
+          },
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          provider: true,
+          reference: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async getMyTripById(userId: string, tripId: string) {
+  const trip = await this.prisma.booking.findFirst({
+    where: {
+      id: tripId,
+      passengerId: userId,
+    },
+    select: {
+      id: true,
+      seatsBooked: true,
+      totalAmount: true,
+      serviceFee: true,
+      status: true,
+      createdAt: true,
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+          estimatedArrivalTime: true,
+          pricePerSeat: true,
+          status: true,
+          stops: {
+            select: {
+              id: true,
+              city: true,
+              address: true,
+              stopOrder: true,
+            },
+            orderBy: {
+              stopOrder: 'asc',
+            },
+          },
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+          vehicle: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              color: true,
+              plateNumber: true,
+            },
+          },
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          provider: true,
+          reference: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  if (!trip) {
+    throw new NotFoundException('Trip not found');
+  }
+
+  return trip;
+}
 }
