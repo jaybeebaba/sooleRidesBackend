@@ -110,6 +110,8 @@ model User {
 
   isEmailVerified Boolean @default(false)
   isPhoneVerified Boolean @default(false)
+  isIdentityVerified Boolean @default(false)
+  isFaceVerified     Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
