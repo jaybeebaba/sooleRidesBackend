@@ -140,5 +140,25 @@ updateReportStatus(
 ) {
   return this.adminService.updateReportStatus(id, dto.status);
 }
+
+@Get('bookings')
+getAllBookings() {
+  return this.adminService.getAllBookings();
+}
+
+@Get('bookings/:id')
+getBookingById(@Param('id') id: string) {
+  return this.adminService.getBookingById(id);
+}
+
+@Get('payments')
+getAllPayments() {
+  return this.adminService.getAllPayments();
+}
+
+@Get('payments/:id')
+getPaymentById(@Param('id') id: string) {
+  return this.adminService.getPaymentById(id);
+}
  
 }

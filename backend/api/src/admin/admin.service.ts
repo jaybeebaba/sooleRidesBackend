@@ -552,4 +552,221 @@ async updateReportStatus(reportId: string, status: ReportStatus) {
     },
   });
 }
+
+async getAllBookings() {
+  return this.prisma.booking.findMany({
+    select: {
+      id: true,
+      seatsBooked: true,
+      totalAmount: true,
+      serviceFee: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      passenger: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+          status: true,
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          reference: true,
+          provider: true,
+          status: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async getBookingById(bookingId: string) {
+  const booking = await this.prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      id: true,
+      seatsBooked: true,
+      totalAmount: true,
+      serviceFee: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      passenger: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          isIdentityVerified: true,
+          isFaceVerified: true,
+        },
+      },
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+          estimatedArrivalTime: true,
+          pricePerSeat: true,
+          availableSeats: true,
+          totalSeats: true,
+          status: true,
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          vehicle: {
+            select: {
+              id: true,
+              plateNumber: true,
+              brand: true,
+              model: true,
+              color: true,
+              status: true,
+            },
+          },
+          stops: {
+            orderBy: {
+              stopOrder: 'asc',
+            },
+          },
+        },
+      },
+      payment: true,
+      review: true,
+    },
+  });
+
+  if (!booking) {
+    throw new NotFoundException('Booking not found');
+  }
+
+  return booking;
+}
+
+async getAllPayments() {
+  return this.prisma.payment.findMany({
+    select: {
+      id: true,
+      amount: true,
+      reference: true,
+      provider: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      booking: {
+        select: {
+          id: true,
+          status: true,
+          seatsBooked: true,
+          totalAmount: true,
+          passenger: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          ride: {
+            select: {
+              id: true,
+              origin: true,
+              destination: true,
+              departureTime: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async getPaymentById(paymentId: string) {
+  const payment = await this.prisma.payment.findUnique({
+    where: { id: paymentId },
+    select: {
+      id: true,
+      amount: true,
+      reference: true,
+      provider: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      booking: {
+        select: {
+          id: true,
+          seatsBooked: true,
+          totalAmount: true,
+          serviceFee: true,
+          status: true,
+          passenger: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          ride: {
+            select: {
+              id: true,
+              origin: true,
+              destination: true,
+              departureTime: true,
+              driver: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!payment) {
+    throw new NotFoundException('Payment not found');
+  }
+
+  return payment;
+}
 }
