@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DriverStatus, UserRole, VehicleStatus } from '@prisma/client';
+import { DriverStatus, ReportStatus, UserRole, VehicleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -459,4 +459,97 @@ async unsuspendVehicle(vehicleId: string) {
   };
 }
 
+async getAllReports() {
+  return this.prisma.report.findMany({
+    select: {
+      id: true,
+      reason: true,
+      details: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      reporter: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      reportedUser: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          role: true,
+          isActive: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async getReportById(reportId: string) {
+  const report = await this.prisma.report.findUnique({
+    where: { id: reportId },
+    select: {
+      id: true,
+      reason: true,
+      details: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      reporter: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      reportedUser: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          role: true,
+          isActive: true,
+        },
+      },
+    },
+  });
+
+  if (!report) {
+    throw new NotFoundException('Report not found');
+  }
+
+  return report;
+}
+
+async updateReportStatus(reportId: string, status: ReportStatus) {
+  const report = await this.prisma.report.findUnique({
+    where: { id: reportId },
+  });
+
+  if (!report) {
+    throw new NotFoundException('Report not found');
+  }
+
+  return this.prisma.report.update({
+    where: { id: reportId },
+    data: { status },
+    select: {
+      id: true,
+      reason: true,
+      details: true,
+      status: true,
+      updatedAt: true,
+    },
+  });
+}
 }

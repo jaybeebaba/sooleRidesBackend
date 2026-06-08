@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, UseGuards, Body } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 
 import { AdminService } from './admin.service';
@@ -9,6 +9,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
+import { UpdateReportStatusDto } from '../reports/dto/update-report-status.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -120,6 +121,24 @@ suspendVehicle(@Param('id') id: string) {
 @Patch('vehicles/:id/unsuspend')
 unsuspendVehicle(@Param('id') id: string) {
   return this.adminService.unsuspendVehicle(id);
+}
+
+@Get('reports')
+getAllReports() {
+  return this.adminService.getAllReports();
+}
+
+@Get('reports/:id')
+getReportById(@Param('id') id: string) {
+  return this.adminService.getReportById(id);
+}
+
+@Patch('reports/:id/status')
+updateReportStatus(
+  @Param('id') id: string,
+  @Body() dto: UpdateReportStatusDto,
+) {
+  return this.adminService.updateReportStatus(id, dto.status);
 }
  
 }
