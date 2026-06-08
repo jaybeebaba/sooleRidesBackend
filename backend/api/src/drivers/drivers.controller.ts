@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, Param } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -24,4 +24,22 @@ export class DriversController {
   getMe(@CurrentUser() user: CurrentUserType) {
     return this.driversService.getMe(user.id);
   }
+
+  @Get('rides')
+getMyRides(@CurrentUser() user: CurrentUserType) {
+  return this.driversService.getMyRides(user.id);
+}
+
+@Get('rides/active')
+getActiveRides(@CurrentUser() user: CurrentUserType) {
+  return this.driversService.getActiveRides(user.id);
+}
+
+@Get('rides/:id')
+getRideById(
+  @CurrentUser() user: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.driversService.getRideById(user.id, id);
+}
 }
