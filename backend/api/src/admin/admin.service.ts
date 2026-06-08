@@ -1,10 +1,136 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException  } from '@nestjs/common';
 import { DriverStatus, ReportStatus, UserRole, VehicleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getUserById(userId: string) {
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isIdentityVerified: true,
+      isFaceVerified: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      driverProfile: {
+        select: {
+          id: true,
+          status: true,
+          licenseNumber: true,
+          yearsDriving: true,
+          vehicles: {
+            select: {
+              id: true,
+              plateNumber: true,
+              brand: true,
+              model: true,
+              status: true,
+            },
+          },
+        },
+      },
+      bookings: {
+        select: {
+          id: true,
+          status: true,
+          totalAmount: true,
+          createdAt: true,
+          ride: {
+            select: {
+              id: true,
+              origin: true,
+              destination: true,
+              departureTime: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  return user;
+}
+
+async suspendUser(userId: string) {
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  if (user.role === UserRole.SUPER_ADMIN) {
+    throw new BadRequestException('Super admin cannot be suspended');
+  }
+
+  const updatedUser = await this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      isActive: false,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      isActive: true,
+    },
+  });
+
+  return {
+    message: 'User suspended successfully',
+    user: updatedUser,
+  };
+}
+
+async activateUser(userId: string) {
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  const updatedUser = await this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      isActive: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      isActive: true,
+    },
+  });
+
+  return {
+    message: 'User activated successfully',
+    user: updatedUser,
+  };
+}
 
   async getAllDrivers() {
   return this.prisma.driverProfile.findMany({
@@ -768,5 +894,152 @@ async getPaymentById(paymentId: string) {
   }
 
   return payment;
+}
+
+async getAllRides() {
+  return this.prisma.ride.findMany({
+    select: {
+      id: true,
+      origin: true,
+      destination: true,
+      departureTime: true,
+      estimatedArrivalTime: true,
+      pricePerSeat: true,
+      availableSeats: true,
+      totalSeats: true,
+      instantBooking: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      driver: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          plateNumber: true,
+          brand: true,
+          model: true,
+          color: true,
+          status: true,
+        },
+      },
+      bookings: {
+        select: {
+          id: true,
+          seatsBooked: true,
+          status: true,
+          totalAmount: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async getRideById(rideId: string) {
+  const ride = await this.prisma.ride.findUnique({
+    where: { id: rideId },
+    select: {
+      id: true,
+      origin: true,
+      destination: true,
+      departureTime: true,
+      estimatedArrivalTime: true,
+      pricePerSeat: true,
+      availableSeats: true,
+      totalSeats: true,
+      instantBooking: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      driver: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          role: true,
+          isActive: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          plateNumber: true,
+          brand: true,
+          model: true,
+          color: true,
+          seats: true,
+          status: true,
+        },
+      },
+      stops: {
+        orderBy: {
+          stopOrder: 'asc',
+        },
+      },
+      bookings: {
+        select: {
+          id: true,
+          seatsBooked: true,
+          totalAmount: true,
+          serviceFee: true,
+          status: true,
+          passenger: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              reference: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!ride) {
+    throw new NotFoundException('Ride not found');
+  }
+
+  return ride;
+}
+
+async removeRide(rideId: string) {
+  const ride = await this.prisma.ride.findUnique({
+    where: { id: rideId },
+  });
+
+  if (!ride) {
+    throw new NotFoundException('Ride not found');
+  }
+
+  const updatedRide = await this.prisma.ride.update({
+    where: { id: rideId },
+    data: {
+      status: 'REMOVED_BY_ADMIN',
+    },
+  });
+
+  return {
+    message: 'Ride removed successfully',
+    ride: updatedRide,
+  };
 }
 }

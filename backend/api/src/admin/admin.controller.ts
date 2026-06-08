@@ -47,6 +47,21 @@ export class AdminController {
       },
     });
   }
+
+@Get('users/:id')
+getUserById(@Param('id') id: string) {
+  return this.adminService.getUserById(id);
+}
+
+@Patch('users/:id/suspend')
+suspendUser(@Param('id') id: string) {
+  return this.adminService.suspendUser(id);
+}
+
+@Patch('users/:id/activate')
+activateUser(@Param('id') id: string) {
+  return this.adminService.activateUser(id);
+}
 @Get('drivers')
 getAllDrivers() {
   return this.adminService.getAllDrivers();
@@ -159,6 +174,21 @@ getAllPayments() {
 @Get('payments/:id')
 getPaymentById(@Param('id') id: string) {
   return this.adminService.getPaymentById(id);
+}
+
+@Get('rides')
+getAllRides() {
+  return this.adminService.getAllRides();
+}
+
+@Get('rides/:id')
+getRideById(@Param('id') id: string) {
+  return this.adminService.getRideById(id);
+}
+
+@Patch('rides/:id/remove')
+removeRide(@Param('id') id: string) {
+  return this.adminService.removeRide(id);
 }
  
 }
