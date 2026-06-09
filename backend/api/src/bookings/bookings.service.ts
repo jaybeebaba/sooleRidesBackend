@@ -251,60 +251,68 @@ export class BookingsService {
   }
 
   async cancel(userId: string, bookingId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const booking = await tx.booking.findFirst({
-        where: {
-          id: bookingId,
-          passengerId: userId,
-        },
-        include: {
-          ride: true,
-        },
-      });
-
-      if (!booking) {
-        throw new NotFoundException('Booking not found');
-      }
-
-      if (
-        booking.status === BookingStatus.PASSENGER_CANCELLED ||
-        booking.status === BookingStatus.DRIVER_CANCELLED ||
-        booking.status === BookingStatus.COMPLETED ||
-        booking.status === BookingStatus.REFUNDED
-      ) {
-        throw new BadRequestException('Booking cannot be cancelled');
-      }
-
-      const updatedBooking = await tx.booking.update({
-        where: { id: booking.id },
-        data: {
-          status: BookingStatus.PASSENGER_CANCELLED,
-        },
-      });
-
-      if (
-        booking.status === BookingStatus.PAYMENT_PENDING ||
-        booking.status === BookingStatus.CONFIRMED
-      ) {
-        const newAvailableSeats =
-          booking.ride.availableSeats + booking.seatsBooked;
-
-        await tx.ride.update({
-          where: { id: booking.rideId },
-          data: {
-            availableSeats: newAvailableSeats,
-            status:
-              booking.ride.status === RideStatus.FULL
-                ? RideStatus.PUBLISHED
-                : booking.ride.status,
-          },
-        });
-      }
-
-      return {
-        message: 'Booking cancelled successfully',
-        booking: updatedBooking,
-      };
+  return this.prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findFirst({
+      where: {
+        id: bookingId,
+        passengerId: userId,
+      },
+      include: {
+        ride: true,
+      },
     });
-  }
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (
+      booking.status === BookingStatus.PASSENGER_CANCELLED ||
+      booking.status === BookingStatus.DRIVER_CANCELLED ||
+      booking.status === BookingStatus.COMPLETED ||
+      booking.status === BookingStatus.REFUNDED
+    ) {
+      throw new BadRequestException('Booking cannot be cancelled');
+    }
+
+    const updatedBooking = await tx.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: BookingStatus.PASSENGER_CANCELLED,
+      },
+    });
+
+    if (
+      booking.status === BookingStatus.PAYMENT_PENDING ||
+      booking.status === BookingStatus.CONFIRMED
+    ) {
+      const newAvailableSeats = booking.ride.availableSeats + booking.seatsBooked;
+
+      await tx.ride.update({
+        where: { id: booking.rideId },
+        data: {
+          availableSeats: newAvailableSeats,
+          status:
+            booking.ride.status === RideStatus.FULL
+              ? RideStatus.PUBLISHED
+              : booking.ride.status,
+        },
+      });
+    }
+
+    await tx.notification.create({
+      data: {
+        userId: booking.ride.driverId,
+        title: 'Booking cancelled',
+        body: `A passenger cancelled their booking for your ${booking.ride.origin} to ${booking.ride.destination} ride.`,
+        type: 'BOOKING',
+      },
+    });
+
+    return {
+      message: 'Booking cancelled successfully',
+      booking: updatedBooking,
+    };
+  });
+}
 }

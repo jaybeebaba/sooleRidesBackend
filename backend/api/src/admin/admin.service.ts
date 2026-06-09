@@ -1438,4 +1438,39 @@ async getAuditLogById(auditLogId: string) {
 
   return auditLog;
 }
+
+async getUserNotifications(userId: string) {
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  const notifications = await this.prisma.notification.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      title: true,
+      body: true,
+      type: true,
+      isRead: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return {
+    user,
+    notifications,
+  };
+}
 }

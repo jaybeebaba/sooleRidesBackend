@@ -50,7 +50,10 @@ getStats() {
       },
     });
   }
-
+@Get('users/:id/notifications')
+getUserNotifications(@Param('id') id: string) {
+  return this.adminService.getUserNotifications(id);
+}
 @Get('users/:id')
 getUserById(@Param('id') id: string) {
   return this.adminService.getUserById(id);

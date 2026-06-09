@@ -127,9 +127,10 @@ export class MessagesService {
   }
 
   async sendMessage(userId: string, conversationId: string, content: string) {
-    await this.ensureParticipant(userId, conversationId);
+  await this.ensureParticipant(userId, conversationId);
 
-    const message = await this.prisma.message.create({
+  return this.prisma.$transaction(async (tx) => {
+    const message = await tx.message.create({
       data: {
         conversationId,
         senderId: userId,
@@ -145,13 +146,37 @@ export class MessagesService {
       },
     });
 
-    await this.prisma.conversation.update({
+    await tx.conversation.update({
       where: { id: conversationId },
       data: { updatedAt: new Date() },
     });
 
+    const otherParticipants = await tx.conversationParticipant.findMany({
+      where: {
+        conversationId,
+        userId: {
+          not: userId,
+        },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    for (const participant of otherParticipants) {
+      await tx.notification.create({
+        data: {
+          userId: participant.userId,
+          title: 'New message',
+          body: `${message.sender.fullName ?? 'Someone'} sent you a message.`,
+          type: 'MESSAGE',
+        },
+      });
+    }
+
     return message;
-  }
+  });
+}
 
   async markConversationAsRead(userId: string, conversationId: string) {
     await this.ensureParticipant(userId, conversationId);

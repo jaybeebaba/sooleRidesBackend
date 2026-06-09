@@ -151,53 +151,75 @@ export class PaymentsService {
   }
 
   async mockConfirmPayment(userId: string, paymentId: string) {
-    const payment = await this.prisma.payment.findFirst({
-      where: {
-        id: paymentId,
-        booking: {
-          passengerId: userId,
+  const payment = await this.prisma.payment.findFirst({
+    where: {
+      id: paymentId,
+      booking: {
+        passengerId: userId,
+      },
+    },
+    include: {
+      booking: {
+        include: {
+          ride: true,
         },
       },
-      include: {
-        booking: true,
-      },
-    });
+    },
+  });
 
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
-    }
-
-    if (payment.status === PaymentStatus.SUCCESSFUL) {
-      return {
-        message: 'Payment already confirmed',
-        payment,
-      };
-    }
-
-    if (payment.status !== PaymentStatus.PENDING) {
-      throw new BadRequestException('Payment cannot be confirmed');
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      const updatedPayment = await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.SUCCESSFUL,
-        },
-      });
-
-      const updatedBooking = await tx.booking.update({
-        where: { id: payment.bookingId },
-        data: {
-          status: BookingStatus.CONFIRMED,
-        },
-      });
-
-      return {
-        message: 'Payment confirmed successfully',
-        payment: updatedPayment,
-        booking: updatedBooking,
-      };
-    });
+  if (!payment) {
+    throw new NotFoundException('Payment not found');
   }
+
+  if (payment.status === PaymentStatus.SUCCESSFUL) {
+    return {
+      message: 'Payment already confirmed',
+      payment,
+    };
+  }
+
+  if (payment.status !== PaymentStatus.PENDING) {
+    throw new BadRequestException('Payment cannot be confirmed');
+  }
+
+  return this.prisma.$transaction(async (tx) => {
+    const updatedPayment = await tx.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: PaymentStatus.SUCCESSFUL,
+      },
+    });
+
+    const updatedBooking = await tx.booking.update({
+      where: { id: payment.bookingId },
+      data: {
+        status: BookingStatus.CONFIRMED,
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: payment.booking.passengerId,
+        title: 'Payment confirmed',
+        body: `Your payment for ${payment.booking.ride.origin} to ${payment.booking.ride.destination} has been confirmed.`,
+        type: 'PAYMENT',
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: payment.booking.ride.driverId,
+        title: 'Booking payment confirmed',
+        body: `A passenger has completed payment for your ${payment.booking.ride.origin} to ${payment.booking.ride.destination} ride.`,
+        type: 'PAYMENT',
+      },
+    });
+
+    return {
+      message: 'Payment confirmed successfully',
+      payment: updatedPayment,
+      booking: updatedBooking,
+    };
+  });
+}
 }
