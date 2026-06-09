@@ -26,7 +26,10 @@ export class PassengersController {
   ) {
     return this.passengersService.updateMe(user.id, dto);
   }
-
+@Get('dashboard')
+getDashboard(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getDashboard(user.id);
+}
   @Get('saved-routes')
 getSavedRoutes(@CurrentUser() user: CurrentUserType) {
   return this.passengersService.getSavedRoutes(user.id);

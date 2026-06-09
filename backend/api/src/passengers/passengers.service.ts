@@ -362,4 +362,45 @@ async getCancelledTrips(userId: string) {
     },
   });
 }
+
+async getDashboard(userId: string) {
+  const [
+    upcomingTrips,
+    completedTrips,
+    cancelledTrips,
+    savedRoutes,
+    unreadNotifications,
+  ] = await Promise.all([
+    this.prisma.booking.count({
+      where: {
+        passengerId: userId,
+        status: { in: ['PAYMENT_PENDING', 'CONFIRMED'] },
+        ride: { departureTime: { gt: new Date() } },
+      },
+    }),
+    this.prisma.booking.count({
+      where: { passengerId: userId, status: 'COMPLETED' },
+    }),
+    this.prisma.booking.count({
+      where: {
+        passengerId: userId,
+        status: {
+          in: ['PASSENGER_CANCELLED', 'DRIVER_CANCELLED', 'REFUNDED'],
+        },
+      },
+    }),
+    this.prisma.savedRoute.count({ where: { userId } }),
+    this.prisma.notification.count({
+      where: { userId, isRead: false },
+    }),
+  ]);
+
+  return {
+    upcomingTrips,
+    completedTrips,
+    cancelledTrips,
+    savedRoutes,
+    unreadNotifications,
+  };
+}
 }

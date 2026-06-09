@@ -27,7 +27,10 @@ export class AdminController {
       user,
     };
   }
-
+@Get('stats')
+getStats() {
+  return this.adminService.getStats();
+}
   @Get('users')
   async getAllUsers() {
     return this.prisma.user.findMany({
@@ -54,13 +57,19 @@ getUserById(@Param('id') id: string) {
 }
 
 @Patch('users/:id/suspend')
-suspendUser(@Param('id') id: string) {
-  return this.adminService.suspendUser(id);
+suspendUser(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.suspendUser(admin.id, id);
 }
 
 @Patch('users/:id/activate')
-activateUser(@Param('id') id: string) {
-  return this.adminService.activateUser(id);
+activateUser(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.activateUser(admin.id, id);
 }
 @Get('drivers')
 getAllDrivers() {
@@ -83,24 +92,36 @@ getDriverById(@Param('id') id: string) {
 
 
 @Patch('drivers/:id/suspend')
-suspendDriver(@Param('id') id: string) {
-  return this.adminService.suspendDriver(id);
+suspendDriver(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.suspendDriver(admin.id, id);
 }
 
 @Patch('drivers/:id/unsuspend')
-unsuspendDriver(@Param('id') id: string) {
-  return this.adminService.unsuspendDriver(id);
+unsuspendDriver(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.unsuspendDriver(admin.id, id);
 }
   
   @Patch('drivers/:id/approve')
-  approveDriver(@Param('id') id: string) {
-    return this.adminService.approveDriver(id);
-  }
+approveDriver(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.approveDriver(admin.id, id);
+}
 
   @Patch('drivers/:id/reject')
-  rejectDriver(@Param('id') id: string) {
-    return this.adminService.rejectDriver(id);
-  }
+rejectDriver(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.rejectDriver(admin.id, id);
+}
 
   
 @Get('vehicles')
@@ -119,23 +140,35 @@ getVehicleById(@Param('id') id: string) {
 }
 
 @Patch('vehicles/:id/approve')
-approveVehicle(@Param('id') id: string) {
-  return this.adminService.approveVehicle(id);
+approveVehicle(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.approveVehicle(admin.id, id);
 }
 
 @Patch('vehicles/:id/reject')
-rejectVehicle(@Param('id') id: string) {
-  return this.adminService.rejectVehicle(id);
+rejectVehicle(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.rejectVehicle(admin.id, id);
 }
 
 @Patch('vehicles/:id/suspend')
-suspendVehicle(@Param('id') id: string) {
-  return this.adminService.suspendVehicle(id);
+suspendVehicle(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.suspendVehicle(admin.id, id);
 }
 
 @Patch('vehicles/:id/unsuspend')
-unsuspendVehicle(@Param('id') id: string) {
-  return this.adminService.unsuspendVehicle(id);
+unsuspendVehicle(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.unsuspendVehicle(admin.id, id);
 }
 
 @Get('reports')
@@ -150,10 +183,11 @@ getReportById(@Param('id') id: string) {
 
 @Patch('reports/:id/status')
 updateReportStatus(
+  @CurrentUser() admin: CurrentUserType,
   @Param('id') id: string,
   @Body() dto: UpdateReportStatusDto,
 ) {
-  return this.adminService.updateReportStatus(id, dto.status);
+  return this.adminService.updateReportStatus(admin.id, id, dto.status);
 }
 
 @Get('bookings')
@@ -187,8 +221,21 @@ getRideById(@Param('id') id: string) {
 }
 
 @Patch('rides/:id/remove')
-removeRide(@Param('id') id: string) {
-  return this.adminService.removeRide(id);
+removeRide(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.removeRide(admin.id, id);
+}
+
+@Get('audit-logs')
+getAuditLogs() {
+  return this.adminService.getAuditLogs();
+}
+
+@Get('audit-logs/:id')
+getAuditLogById(@Param('id') id: string) {
+  return this.adminService.getAuditLogById(id);
 }
  
 }
