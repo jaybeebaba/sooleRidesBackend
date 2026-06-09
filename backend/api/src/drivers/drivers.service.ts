@@ -7,6 +7,7 @@ import {
 import { DriverStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyDriverDto } from './dto/apply-driver.dto';
+import { UpdateDriverProfileDto } from './dto/update-driver-profile.dto';
 
 @Injectable()
 export class DriversService {
@@ -517,5 +518,355 @@ async completeRide(userId: string, rideId: string) {
       ride: updatedRide,
     };
   });
+}
+
+async getEarnings(userId: string) {
+  return this.prisma.booking.findMany({
+    where: {
+      ride: {
+        driverId: userId,
+      },
+      status: {
+        in: ['CONFIRMED', 'COMPLETED'],
+      },
+      payment: {
+        status: 'SUCCESSFUL',
+      },
+    },
+    select: {
+      id: true,
+      seatsBooked: true,
+      totalAmount: true,
+      serviceFee: true,
+      status: true,
+      createdAt: true,
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          reference: true,
+          createdAt: true,
+        },
+      },
+      passenger: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async getEarningsSummary(userId: string) {
+  const bookings = await this.prisma.booking.findMany({
+    where: {
+      ride: {
+        driverId: userId,
+      },
+      status: {
+        in: ['CONFIRMED', 'COMPLETED'],
+      },
+      payment: {
+        status: 'SUCCESSFUL',
+      },
+    },
+    select: {
+      totalAmount: true,
+      serviceFee: true,
+    },
+  });
+
+  const grossEarnings = bookings.reduce(
+    (sum, booking) => sum + booking.totalAmount,
+    0,
+  );
+
+  const platformFees = bookings.reduce(
+    (sum, booking) => sum + booking.serviceFee,
+    0,
+  );
+
+  const netEarnings = grossEarnings - platformFees;
+
+  return {
+    totalPaidBookings: bookings.length,
+    grossEarnings,
+    platformFees,
+    netEarnings,
+  };
+}
+
+async getRideEarnings(userId: string, rideId: string) {
+  const ride = await this.prisma.ride.findFirst({
+    where: {
+      id: rideId,
+      driverId: userId,
+    },
+    select: {
+      id: true,
+      origin: true,
+      destination: true,
+      departureTime: true,
+      status: true,
+      pricePerSeat: true,
+      bookings: {
+        where: {
+          status: {
+            in: ['CONFIRMED', 'COMPLETED'],
+          },
+          payment: {
+            status: 'SUCCESSFUL',
+          },
+        },
+        select: {
+          id: true,
+          seatsBooked: true,
+          totalAmount: true,
+          serviceFee: true,
+          status: true,
+          passenger: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              amount: true,
+              reference: true,
+              status: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!ride) {
+    throw new NotFoundException('Ride not found');
+  }
+
+  const grossEarnings = ride.bookings.reduce(
+    (sum, booking) => sum + booking.totalAmount,
+    0,
+  );
+
+  const platformFees = ride.bookings.reduce(
+    (sum, booking) => sum + booking.serviceFee,
+    0,
+  );
+
+  const netEarnings = grossEarnings - platformFees;
+
+  return {
+    ride: {
+      id: ride.id,
+      origin: ride.origin,
+      destination: ride.destination,
+      departureTime: ride.departureTime,
+      status: ride.status,
+      pricePerSeat: ride.pricePerSeat,
+    },
+    summary: {
+      totalPaidBookings: ride.bookings.length,
+      grossEarnings,
+      platformFees,
+      netEarnings,
+    },
+    bookings: ride.bookings,
+  };
+}
+
+async getRidePassengers(userId: string, rideId: string) {
+  const ride = await this.prisma.ride.findFirst({
+    where: {
+      id: rideId,
+      driverId: userId,
+    },
+  });
+
+  if (!ride) {
+    throw new NotFoundException('Ride not found');
+  }
+
+  return this.prisma.booking.findMany({
+    where: {
+      rideId,
+      status: {
+        in: ['CONFIRMED', 'COMPLETED'],
+      },
+    },
+    select: {
+      id: true,
+      seatsBooked: true,
+      status: true,
+      totalAmount: true,
+      createdAt: true,
+      passenger: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          email: true,
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          isIdentityVerified: true,
+          isFaceVerified: true,
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          status: true,
+          reference: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  });
+}
+
+async updateMe(userId: string, dto: UpdateDriverProfileDto) {
+  const driverProfile = await this.prisma.driverProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!driverProfile) {
+    throw new NotFoundException('Driver profile not found');
+  }
+
+  return this.prisma.driverProfile.update({
+    where: { userId },
+    data: {
+      licenseNumber: dto.licenseNumber?.trim(),
+      bio: dto.bio?.trim(),
+      yearsDriving: dto.yearsDriving,
+    },
+    select: {
+      id: true,
+      status: true,
+      licenseNumber: true,
+      bio: true,
+      yearsDriving: true,
+      updatedAt: true,
+    },
+  });
+}
+
+async cancelRide(userId: string, rideId: string) {
+  return this.prisma.$transaction(async (tx) => {
+    const ride = await tx.ride.findFirst({
+      where: {
+        id: rideId,
+        driverId: userId,
+      },
+    });
+
+    if (!ride) {
+      throw new NotFoundException('Ride not found');
+    }
+
+    if (ride.status === 'STARTED' || ride.status === 'COMPLETED') {
+      throw new BadRequestException('Started or completed rides cannot be cancelled');
+    }
+
+    if (ride.status === 'CANCELLED') {
+      throw new BadRequestException('Ride is already cancelled');
+    }
+
+    const updatedRide = await tx.ride.update({
+      where: { id: ride.id },
+      data: {
+        status: 'CANCELLED',
+      },
+    });
+
+    await tx.booking.updateMany({
+      where: {
+        rideId: ride.id,
+        status: {
+          in: ['REQUESTED', 'PAYMENT_PENDING', 'CONFIRMED'],
+        },
+      },
+      data: {
+        status: 'DRIVER_CANCELLED',
+      },
+    });
+
+    return {
+      message: 'Ride cancelled successfully',
+      ride: updatedRide,
+    };
+  });
+}
+
+async getDashboard(userId: string) {
+  const driverProfile = await this.prisma.driverProfile.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!driverProfile) {
+    throw new NotFoundException('Driver profile not found');
+  }
+
+  const [
+    totalRides,
+    activeRides,
+    completedRides,
+    pendingBookings,
+    confirmedBookings,
+    approvedVehicles,
+    earningsSummary,
+  ] = await Promise.all([
+    this.prisma.ride.count({ where: { driverId: userId } }),
+    this.prisma.ride.count({
+      where: { driverId: userId, status: { in: ['PUBLISHED', 'FULL', 'STARTED'] } },
+    }),
+    this.prisma.ride.count({
+      where: { driverId: userId, status: 'COMPLETED' },
+    }),
+    this.prisma.booking.count({
+      where: { ride: { driverId: userId }, status: 'REQUESTED' },
+    }),
+    this.prisma.booking.count({
+      where: { ride: { driverId: userId }, status: 'CONFIRMED' },
+    }),
+    this.prisma.vehicle.count({
+      where: { driverProfileId: driverProfile.id, status: 'APPROVED' },
+    }),
+    this.getEarningsSummary(userId),
+  ]);
+
+  return {
+    driverStatus: driverProfile.status,
+    totalRides,
+    activeRides,
+    completedRides,
+    pendingBookings,
+    confirmedBookings,
+    approvedVehicles,
+    earnings: earningsSummary,
+  };
 }
 }

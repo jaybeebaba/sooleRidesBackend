@@ -250,4 +250,116 @@ async getMyTripById(userId: string, tripId: string) {
 
   return trip;
 }
+
+async getUpcomingTrips(userId: string) {
+  return this.prisma.booking.findMany({
+    where: {
+      passengerId: userId,
+      status: {
+        in: ['PAYMENT_PENDING', 'CONFIRMED'],
+      },
+      ride: {
+        departureTime: {
+          gt: new Date(),
+        },
+      },
+    },
+    select: {
+      id: true,
+      seatsBooked: true,
+      totalAmount: true,
+      serviceFee: true,
+      status: true,
+      createdAt: true,
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+          estimatedArrivalTime: true,
+          pricePerSeat: true,
+          status: true,
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+          vehicle: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              color: true,
+              plateNumber: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      ride: {
+        departureTime: 'asc',
+      },
+    },
+  });
+}
+
+async getCompletedTrips(userId: string) {
+  return this.prisma.booking.findMany({
+    where: {
+      passengerId: userId,
+      status: 'COMPLETED',
+    },
+    include: {
+      ride: {
+        include: {
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+          vehicle: true,
+        },
+      },
+      payment: true,
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+}
+
+async getCancelledTrips(userId: string) {
+  return this.prisma.booking.findMany({
+    where: {
+      passengerId: userId,
+      status: {
+        in: ['PASSENGER_CANCELLED', 'DRIVER_CANCELLED', 'REFUNDED'],
+      },
+    },
+    include: {
+      ride: {
+        include: {
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+          vehicle: true,
+        },
+      },
+      payment: true,
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+}
 }

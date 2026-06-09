@@ -74,6 +74,21 @@ getMyTrips(@CurrentUser() user: CurrentUserType) {
   return this.passengersService.getMyTrips(user.id);
 }
 
+@Get('upcoming-trips')
+getUpcomingTrips(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getUpcomingTrips(user.id);
+}
+
+@Get('completed-trips')
+getCompletedTrips(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getCompletedTrips(user.id);
+}
+
+@Get('cancelled-trips')
+getCancelledTrips(@CurrentUser() user: CurrentUserType) {
+  return this.passengersService.getCancelledTrips(user.id);
+}
+
 @Get('my-trips/:id')
 getMyTripById(
   @CurrentUser() user: CurrentUserType,
