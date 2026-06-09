@@ -13,106 +13,122 @@ export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateBookingDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        isEmailVerified: true,
-        isPhoneVerified: true,
-        isIdentityVerified: true,
-        isFaceVerified: true,
-      },
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isIdentityVerified: true,
+      isFaceVerified: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  if (
+    !user.isEmailVerified ||
+    !user.isPhoneVerified ||
+    !user.isIdentityVerified ||
+    !user.isFaceVerified
+  ) {
+    throw new ForbiddenException('Complete all verifications before booking');
+  }
+
+  return this.prisma.$transaction(async (tx) => {
+    const ride = await tx.ride.findUnique({
+      where: { id: dto.rideId },
     });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (!ride) {
+      throw new NotFoundException('Ride not found');
     }
 
-    if (
-      !user.isEmailVerified ||
-      !user.isPhoneVerified ||
-      !user.isIdentityVerified ||
-      !user.isFaceVerified
-    ) {
-      throw new ForbiddenException(
-        'Complete all verifications before booking',
-      );
+    if (ride.driverId === userId) {
+      throw new ForbiddenException('You cannot book your own ride');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const ride = await tx.ride.findUnique({
-        where: { id: dto.rideId },
-      });
+    if (ride.status !== RideStatus.PUBLISHED) {
+      throw new BadRequestException('Ride is not available for booking');
+    }
 
-      if (!ride) {
-        throw new NotFoundException('Ride not found');
-      }
+    if (ride.departureTime <= new Date()) {
+      throw new BadRequestException('Ride has already departed');
+    }
 
-      if (ride.driverId === userId) {
-        throw new ForbiddenException('You cannot book your own ride');
-      }
+    if (ride.availableSeats < dto.seatsBooked) {
+      throw new BadRequestException('Not enough seats available');
+    }
 
-      if (ride.status !== RideStatus.PUBLISHED) {
-        throw new BadRequestException('Ride is not available for booking');
-      }
+    const serviceFee = Math.round(ride.pricePerSeat * dto.seatsBooked * 0.1);
+    const totalAmount = ride.pricePerSeat * dto.seatsBooked + serviceFee;
 
-      if (ride.departureTime <= new Date()) {
-        throw new BadRequestException('Ride has already departed');
-      }
-
-      if (ride.availableSeats < dto.seatsBooked) {
-        throw new BadRequestException('Not enough seats available');
-      }
-
-      const serviceFee = Math.round(ride.pricePerSeat * dto.seatsBooked * 0.1);
-      const totalAmount = ride.pricePerSeat * dto.seatsBooked + serviceFee;
-
-      const booking = await tx.booking.create({
-        data: {
-          passengerId: userId,
-          rideId: ride.id,
-          seatsBooked: dto.seatsBooked,
-          serviceFee,
-          totalAmount,
-          status: ride.instantBooking
-            ? BookingStatus.PAYMENT_PENDING
-            : BookingStatus.REQUESTED,
+    const booking = await tx.booking.create({
+      data: {
+        passengerId: userId,
+        rideId: ride.id,
+        seatsBooked: dto.seatsBooked,
+        serviceFee,
+        totalAmount,
+        status: ride.instantBooking
+          ? BookingStatus.PAYMENT_PENDING
+          : BookingStatus.REQUESTED,
+      },
+      include: {
+        passenger: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
         },
-        include: {
-          ride: {
-            select: {
-              id: true,
-              origin: true,
-              destination: true,
-              departureTime: true,
-              pricePerSeat: true,
-              driver: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  phone: true,
-                },
+        ride: {
+          select: {
+            id: true,
+            origin: true,
+            destination: true,
+            departureTime: true,
+            pricePerSeat: true,
+            driver: {
+              select: {
+                id: true,
+                fullName: true,
+                phone: true,
               },
             },
           },
         },
-      });
-
-      if (ride.instantBooking) {
-        const remainingSeats = ride.availableSeats - dto.seatsBooked;
-
-        await tx.ride.update({
-          where: { id: ride.id },
-          data: {
-            availableSeats: remainingSeats,
-            status: remainingSeats === 0 ? RideStatus.FULL : RideStatus.PUBLISHED,
-          },
-        });
-      }
-
-      return booking;
+      },
     });
-  }
+
+    await tx.notification.create({
+      data: {
+        userId: ride.driverId,
+        title: ride.instantBooking ? 'New booking' : 'New booking request',
+        body: `${booking.passenger.fullName ?? 'A passenger'} booked ${
+          dto.seatsBooked
+        } seat(s) for your ${ride.origin} to ${ride.destination} ride.`,
+        type: 'BOOKING',
+      },
+    });
+
+    if (ride.instantBooking) {
+      const remainingSeats = ride.availableSeats - dto.seatsBooked;
+
+      await tx.ride.update({
+        where: { id: ride.id },
+        data: {
+          availableSeats: remainingSeats,
+          status: remainingSeats === 0 ? RideStatus.FULL : RideStatus.PUBLISHED,
+        },
+      });
+    }
+
+    return booking;
+  });
+}
 
   async getMyBookings(userId: string) {
     return this.prisma.booking.findMany({

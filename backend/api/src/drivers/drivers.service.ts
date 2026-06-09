@@ -4,10 +4,11 @@ import {
   NotFoundException,
   BadRequestException
 } from '@nestjs/common';
-import { DriverStatus } from '@prisma/client';
+import { DriverStatus, NotificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyDriverDto } from './dto/apply-driver.dto';
 import { UpdateDriverProfileDto } from './dto/update-driver-profile.dto';
+
 
 @Injectable()
 export class DriversService {
@@ -412,6 +413,15 @@ async acceptBooking(userId: string, bookingId: string) {
       },
     });
 
+    await tx.notification.create({
+      data: {
+        userId: booking.passengerId,
+        title: 'Booking accepted',
+        body: `Your booking for ${booking.ride.origin} to ${booking.ride.destination} has been accepted. Please proceed to payment.`,
+        type: NotificationType.RIDE,
+      },
+    });
+
     return {
       message: 'Booking accepted successfully',
       booking: updatedBooking,
@@ -420,63 +430,101 @@ async acceptBooking(userId: string, bookingId: string) {
 }
 
 async rejectBooking(userId: string, bookingId: string) {
-  const booking = await this.prisma.booking.findFirst({
-    where: {
-      id: bookingId,
-      ride: {
-        driverId: userId,
+  return this.prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findFirst({
+      where: {
+        id: bookingId,
+        ride: {
+          driverId: userId,
+        },
       },
-    },
+      include: {
+        ride: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status !== 'REQUESTED') {
+      throw new BadRequestException('Only requested bookings can be rejected');
+    }
+
+    const updatedBooking = await tx.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: 'DRIVER_CANCELLED',
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: booking.passengerId,
+        title: 'Booking rejected',
+        body: `Your booking request for ${booking.ride.origin} to ${booking.ride.destination} was rejected by the driver.`,
+        type: NotificationType.RIDE,
+      },
+    });
+
+    return {
+      message: 'Booking rejected successfully',
+      booking: updatedBooking,
+    };
   });
-
-  if (!booking) {
-    throw new NotFoundException('Booking not found');
-  }
-
-  if (booking.status !== 'REQUESTED') {
-    throw new BadRequestException('Only requested bookings can be rejected');
-  }
-
-  const updatedBooking = await this.prisma.booking.update({
-    where: { id: booking.id },
-    data: {
-      status: 'DRIVER_CANCELLED',
-    },
-  });
-
-  return {
-    message: 'Booking rejected successfully',
-    booking: updatedBooking,
-  };
 }
 
 async startRide(userId: string, rideId: string) {
-  const ride = await this.prisma.ride.findFirst({
-    where: {
-      id: rideId,
-      driverId: userId,
-    },
+  return this.prisma.$transaction(async (tx) => {
+    const ride = await tx.ride.findFirst({
+      where: {
+        id: rideId,
+        driverId: userId,
+      },
+      include: {
+        bookings: {
+          where: {
+            status: {
+              in: ['CONFIRMED', 'PAYMENT_PENDING'],
+            },
+          },
+        },
+      },
+    });
+
+    if (!ride) {
+      throw new NotFoundException('Ride not found');
+    }
+
+    if (ride.status !== 'PUBLISHED' && ride.status !== 'FULL') {
+      throw new BadRequestException(
+        'Only published or full rides can be started',
+      );
+    }
+
+    const updatedRide = await tx.ride.update({
+      where: { id: ride.id },
+      data: {
+        status: 'STARTED',
+      },
+    });
+
+    for (const booking of ride.bookings) {
+      await tx.notification.create({
+        data: {
+          userId: booking.passengerId,
+          title: 'Ride started',
+          body: `Your ride from ${ride.origin} to ${ride.destination} has started.`,
+          type: NotificationType.RIDE,
+        },
+      });
+    }
+
+    return {
+      message: 'Ride started successfully',
+      ride: updatedRide,
+    };
   });
-
-  if (!ride) {
-    throw new NotFoundException('Ride not found');
-  }
-
-  if (ride.status !== 'PUBLISHED' && ride.status !== 'FULL') {
-    throw new BadRequestException('Only published or full rides can be started');
-  }
-
-  const updatedRide = await this.prisma.ride.update({
-    where: { id: ride.id },
-    data: {
-      status: 'STARTED',
-    },
-  });
-
-  return {
-    message: 'Ride started successfully',
-    ride: updatedRide,
-  };
 }
 
 async completeRide(userId: string, rideId: string) {
@@ -485,6 +533,13 @@ async completeRide(userId: string, rideId: string) {
       where: {
         id: rideId,
         driverId: userId,
+      },
+      include: {
+        bookings: {
+          where: {
+            status: 'CONFIRMED',
+          },
+        },
       },
     });
 
@@ -512,6 +567,17 @@ async completeRide(userId: string, rideId: string) {
         status: 'COMPLETED',
       },
     });
+
+    for (const booking of ride.bookings) {
+      await tx.notification.create({
+        data: {
+          userId: booking.passengerId,
+          title: 'Ride completed',
+          body: `Your ride from ${ride.origin} to ${ride.destination} has been completed.`,
+          type: NotificationType.RIDE,
+        },
+      });
+    }
 
     return {
       message: 'Ride completed successfully',
@@ -777,6 +843,15 @@ async cancelRide(userId: string, rideId: string) {
         id: rideId,
         driverId: userId,
       },
+      include: {
+        bookings: {
+          where: {
+            status: {
+              in: ['REQUESTED', 'PAYMENT_PENDING', 'CONFIRMED'],
+            },
+          },
+        },
+      },
     });
 
     if (!ride) {
@@ -784,7 +859,9 @@ async cancelRide(userId: string, rideId: string) {
     }
 
     if (ride.status === 'STARTED' || ride.status === 'COMPLETED') {
-      throw new BadRequestException('Started or completed rides cannot be cancelled');
+      throw new BadRequestException(
+        'Started or completed rides cannot be cancelled',
+      );
     }
 
     if (ride.status === 'CANCELLED') {
@@ -809,6 +886,17 @@ async cancelRide(userId: string, rideId: string) {
         status: 'DRIVER_CANCELLED',
       },
     });
+
+    for (const booking of ride.bookings) {
+      await tx.notification.create({
+        data: {
+          userId: booking.passengerId,
+          title: 'Ride cancelled',
+          body: `Your ride from ${ride.origin} to ${ride.destination} was cancelled by the driver.`,
+          type: NotificationType.RIDE,
+        },
+      });
+    }
 
     return {
       message: 'Ride cancelled successfully',
