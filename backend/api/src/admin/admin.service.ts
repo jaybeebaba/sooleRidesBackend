@@ -1473,4 +1473,87 @@ async getUserNotifications(userId: string) {
     notifications,
   };
 }
+
+async getAllConversations() {
+  return this.prisma.conversation.findMany({
+    select: {
+      id: true,
+      createdAt: true,
+      updatedAt: true,
+      ride: {
+        select: {
+          id: true,
+          origin: true,
+          destination: true,
+          departureTime: true,
+        },
+      },
+      participants: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      messages: {
+        take: 1,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          sender: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+}
+
+async getConversationMessages(conversationId: string) {
+  const conversation = await this.prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!conversation) {
+    throw new NotFoundException('Conversation not found');
+  }
+
+  return this.prisma.message.findMany({
+    where: { conversationId },
+    select: {
+      id: true,
+      content: true,
+      isRead: true,
+      createdAt: true,
+      sender: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  });
+}
 }

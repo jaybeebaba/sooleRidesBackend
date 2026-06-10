@@ -231,6 +231,16 @@ removeRide(
   return this.adminService.removeRide(admin.id, id);
 }
 
+@Get('conversations')
+getAllConversations() {
+  return this.adminService.getAllConversations();
+}
+
+@Get('conversations/:id/messages')
+getConversationMessages(@Param('id') id: string) {
+  return this.adminService.getConversationMessages(id);
+}
+
 @Get('audit-logs')
 getAuditLogs() {
   return this.adminService.getAuditLogs();
