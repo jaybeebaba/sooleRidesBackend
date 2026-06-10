@@ -179,6 +179,14 @@ getAllReports() {
   return this.adminService.getAllReports();
 }
 
+@Patch('reports/:id/resolve')
+resolveReport(
+  @CurrentUser() admin: CurrentUserType,
+  @Param('id') id: string,
+) {
+  return this.adminService.resolveReport(admin.id, id);
+}
+
 @Get('reports/:id')
 getReportById(@Param('id') id: string) {
   return this.adminService.getReportById(id);

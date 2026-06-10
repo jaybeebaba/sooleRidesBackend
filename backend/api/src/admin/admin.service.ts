@@ -1556,4 +1556,57 @@ async getConversationMessages(conversationId: string) {
     },
   });
 }
+
+async resolveReport(adminId: string, reportId: string) {
+  const report = await this.prisma.report.findUnique({
+    where: { id: reportId },
+    select: {
+      id: true,
+      status: true,
+      reporterId: true,
+      reportedUserId: true,
+      reason: true,
+    },
+  });
+
+  if (!report) {
+    throw new NotFoundException('Report not found');
+  }
+
+  return this.prisma.$transaction(async (tx) => {
+    const updatedReport = await tx.report.update({
+      where: { id: reportId },
+      data: {
+        status: 'RESOLVED',
+      },
+      select: {
+        id: true,
+        reason: true,
+        details: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: adminId,
+        action: 'RESOLVE_REPORT',
+        entity: 'Report',
+        entityId: reportId,
+        metadata: {
+          previousStatus: report.status,
+          reporterId: report.reporterId,
+          reportedUserId: report.reportedUserId,
+          reason: report.reason,
+        },
+      },
+    });
+
+    return {
+      message: 'Report resolved successfully',
+      report: updatedReport,
+    };
+  });
+}
 }
