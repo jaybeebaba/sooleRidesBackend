@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { FullyVerifiedGuard } from '../common/guards/fully-verified.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
 
@@ -23,13 +24,13 @@ export class RidesController {
   constructor(private readonly ridesService: RidesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FullyVerifiedGuard)
   create(@CurrentUser() user: CurrentUserType, @Body() dto: CreateRideDto) {
     return this.ridesService.create(user.id, dto);
   }
 
   @Get('my-rides')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FullyVerifiedGuard)
   getMyRides(@CurrentUser() user: CurrentUserType) {
     return this.ridesService.getMyRides(user.id);
   }
@@ -45,7 +46,7 @@ export class RidesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FullyVerifiedGuard)
   update(
     @CurrentUser() user: CurrentUserType,
     @Param('id') id: string,
@@ -55,7 +56,7 @@ export class RidesController {
   }
 
   @Patch(':id/cancel')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FullyVerifiedGuard)
   cancel(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
     return this.ridesService.cancel(user.id, id);
   }

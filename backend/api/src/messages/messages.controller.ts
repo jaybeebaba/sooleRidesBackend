@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { FullyVerifiedGuard } from '../common/guards/fully-verified.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
 
@@ -17,7 +18,7 @@ import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
 @Controller('messages')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, FullyVerifiedGuard)
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 

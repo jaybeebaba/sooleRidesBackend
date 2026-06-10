@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { FullyVerifiedGuard } from '../common/guards/fully-verified.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
 
@@ -18,7 +19,7 @@ import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 @Controller('vehicles')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, FullyVerifiedGuard)
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 

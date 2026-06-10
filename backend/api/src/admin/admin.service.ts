@@ -1609,4 +1609,348 @@ async resolveReport(adminId: string, reportId: string) {
     };
   });
 }
+
+async getRevenueStats() {
+  const successfulPayments = await this.prisma.payment.findMany({
+    where: {
+      status: 'SUCCESSFUL',
+    },
+    select: {
+      amount: true,
+      booking: {
+        select: {
+          serviceFee: true,
+          totalAmount: true,
+        },
+      },
+    },
+  });
+
+  const grossRevenue = successfulPayments.reduce(
+    (sum, payment) => sum + payment.amount,
+    0,
+  );
+
+  const platformFees = successfulPayments.reduce(
+    (sum, payment) => sum + payment.booking.serviceFee,
+    0,
+  );
+
+  const driverPayouts = grossRevenue - platformFees;
+
+  return {
+    totalSuccessfulPayments: successfulPayments.length,
+    grossRevenue,
+    platformFees,
+    driverPayouts,
+  };
+}
+
+async getPaymentStats() {
+  const [
+    totalPayments,
+    successfulPayments,
+    pendingPayments,
+    failedPayments,
+    refundedPayments,
+  ] = await Promise.all([
+    this.prisma.payment.count(),
+    this.prisma.payment.count({
+      where: {
+        status: 'SUCCESSFUL',
+      },
+    }),
+    this.prisma.payment.count({
+      where: {
+        status: 'PENDING',
+      },
+    }),
+    this.prisma.payment.count({
+      where: {
+        status: 'FAILED',
+      },
+    }),
+    this.prisma.payment.count({
+      where: {
+        status: 'REFUNDED',
+      },
+    }),
+  ]);
+
+  return {
+    totalPayments,
+    successfulPayments,
+    pendingPayments,
+    failedPayments,
+    refundedPayments,
+  };
+}
+
+async getBookingStats() {
+  const [
+    totalBookings,
+    requestedBookings,
+    paymentPendingBookings,
+    confirmedBookings,
+    completedBookings,
+    passengerCancelledBookings,
+    driverCancelledBookings,
+    refundedBookings,
+  ] = await Promise.all([
+    this.prisma.booking.count(),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'REQUESTED',
+      },
+    }),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'PAYMENT_PENDING',
+      },
+    }),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'CONFIRMED',
+      },
+    }),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'COMPLETED',
+      },
+    }),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'PASSENGER_CANCELLED',
+      },
+    }),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'DRIVER_CANCELLED',
+      },
+    }),
+
+    this.prisma.booking.count({
+      where: {
+        status: 'REFUNDED',
+      },
+    }),
+  ]);
+
+  return {
+    totalBookings,
+    requestedBookings,
+    paymentPendingBookings,
+    confirmedBookings,
+    completedBookings,
+    passengerCancelledBookings,
+    driverCancelledBookings,
+    refundedBookings,
+  };
+}
+
+async getRideStats() {
+  const [
+    totalRides,
+    draftRides,
+    publishedRides,
+    fullRides,
+    startedRides,
+    completedRides,
+    cancelledRides,
+    expiredRides,
+    removedByAdminRides,
+  ] = await Promise.all([
+    this.prisma.ride.count(),
+    this.prisma.ride.count({ where: { status: 'DRAFT' } }),
+    this.prisma.ride.count({ where: { status: 'PUBLISHED' } }),
+    this.prisma.ride.count({ where: { status: 'FULL' } }),
+    this.prisma.ride.count({ where: { status: 'STARTED' } }),
+    this.prisma.ride.count({ where: { status: 'COMPLETED' } }),
+    this.prisma.ride.count({ where: { status: 'CANCELLED' } }),
+    this.prisma.ride.count({ where: { status: 'EXPIRED' } }),
+    this.prisma.ride.count({ where: { status: 'REMOVED_BY_ADMIN' } }),
+  ]);
+
+  return {
+    totalRides,
+    draftRides,
+    publishedRides,
+    fullRides,
+    startedRides,
+    completedRides,
+    cancelledRides,
+    expiredRides,
+    removedByAdminRides,
+  };
+}
+
+async getUserStats() {
+  const [
+    totalUsers,
+    activeUsers,
+    suspendedUsers,
+    passengers,
+    drivers,
+    admins,
+    superAdmins,
+    emailVerifiedUsers,
+    phoneVerifiedUsers,
+    identityVerifiedUsers,
+    faceVerifiedUsers,
+  ] = await Promise.all([
+    this.prisma.user.count(),
+    this.prisma.user.count({ where: { isActive: true } }),
+    this.prisma.user.count({ where: { isActive: false } }),
+    this.prisma.user.count({ where: { role: 'PASSENGER' } }),
+    this.prisma.user.count({ where: { role: 'DRIVER' } }),
+    this.prisma.user.count({ where: { role: 'ADMIN' } }),
+    this.prisma.user.count({ where: { role: 'SUPER_ADMIN' } }),
+    this.prisma.user.count({ where: { isEmailVerified: true } }),
+    this.prisma.user.count({ where: { isPhoneVerified: true } }),
+    this.prisma.user.count({ where: { isIdentityVerified: true } }),
+    this.prisma.user.count({ where: { isFaceVerified: true } }),
+  ]);
+
+  return {
+    totalUsers,
+    activeUsers,
+    suspendedUsers,
+    roles: {
+      passengers,
+      drivers,
+      admins,
+      superAdmins,
+    },
+    verifications: {
+      emailVerifiedUsers,
+      phoneVerifiedUsers,
+      identityVerifiedUsers,
+      faceVerifiedUsers,
+    },
+  };
+}
+
+async getReportStats() {
+  const [
+    totalReports,
+    pendingReports,
+    reviewedReports,
+    resolvedReports,
+    rejectedReports,
+  ] = await Promise.all([
+    this.prisma.report.count(),
+    this.prisma.report.count({ where: { status: 'PENDING' } }),
+    this.prisma.report.count({ where: { status: 'REVIEWED' } }),
+    this.prisma.report.count({ where: { status: 'RESOLVED' } }),
+    this.prisma.report.count({ where: { status: 'REJECTED' } }),
+  ]);
+
+  return {
+    totalReports,
+    pendingReports,
+    reviewedReports,
+    resolvedReports,
+    rejectedReports,
+  };
+}
+
+async getVehicleStats() {
+  const [
+    totalVehicles,
+    pendingVehicles,
+    approvedVehicles,
+    rejectedVehicles,
+    suspendedVehicles,
+  ] = await Promise.all([
+    this.prisma.vehicle.count(),
+    this.prisma.vehicle.count({ where: { status: 'PENDING' } }),
+    this.prisma.vehicle.count({ where: { status: 'APPROVED' } }),
+    this.prisma.vehicle.count({ where: { status: 'REJECTED' } }),
+    this.prisma.vehicle.count({ where: { status: 'SUSPENDED' } }),
+  ]);
+
+  return {
+    totalVehicles,
+    pendingVehicles,
+    approvedVehicles,
+    rejectedVehicles,
+    suspendedVehicles,
+  };
+}
+
+async getDriverStats() {
+  const [
+    totalDriverProfiles,
+    pendingDrivers,
+    approvedDrivers,
+    rejectedDrivers,
+    suspendedDrivers,
+  ] = await Promise.all([
+    this.prisma.driverProfile.count(),
+
+    this.prisma.driverProfile.count({
+      where: { status: 'PENDING' },
+    }),
+
+    this.prisma.driverProfile.count({
+      where: { status: 'APPROVED' },
+    }),
+
+    this.prisma.driverProfile.count({
+      where: { status: 'REJECTED' },
+    }),
+
+    this.prisma.driverProfile.count({
+      where: { status: 'SUSPENDED' },
+    }),
+  ]);
+
+  return {
+    totalDriverProfiles,
+    pendingDrivers,
+    approvedDrivers,
+    rejectedDrivers,
+    suspendedDrivers,
+  };
+}
+
+
+
+async getMessageStats() {
+  const [
+    totalConversations,
+    totalMessages,
+    readMessages,
+    unreadMessages,
+  ] = await Promise.all([
+    this.prisma.conversation.count(),
+
+    this.prisma.message.count(),
+
+    this.prisma.message.count({
+      where: {
+        isRead: true,
+      },
+    }),
+
+    this.prisma.message.count({
+      where: {
+        isRead: false,
+      },
+    }),
+  ]);
+
+  return {
+    totalConversations,
+    totalMessages,
+    readMessages,
+    unreadMessages,
+  };
+}
 }

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { FullyVerifiedGuard } from '../common/guards/fully-verified.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
 
@@ -16,7 +17,7 @@ import { PaymentsService } from './payments.service';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 
 @Controller('payments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, FullyVerifiedGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 

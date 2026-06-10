@@ -1,6 +1,15 @@
-import { Body, Controller, Get, Post, UseGuards, Param, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
+import { FullyVerifiedGuard } from '../common/guards/fully-verified.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../common/types/current-user.type';
 
@@ -9,20 +18,18 @@ import { ApplyDriverDto } from './dto/apply-driver.dto';
 import { UpdateDriverProfileDto } from './dto/update-driver-profile.dto';
 
 @Controller('drivers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, FullyVerifiedGuard)
 export class DriversController {
-  constructor(private readonly driversService: DriversService) { }
+  constructor(private readonly driversService: DriversService) {}
+
+  @Post('apply')
+  apply(@CurrentUser() user: CurrentUserType, @Body() dto: ApplyDriverDto) {
+    return this.driversService.apply(user.id, dto);
+  }
 
   @Get('dashboard')
   getDashboard(@CurrentUser() user: CurrentUserType) {
     return this.driversService.getDashboard(user.id);
-  }
-  @Post('apply')
-  apply(
-    @CurrentUser() user: CurrentUserType,
-    @Body() dto: ApplyDriverDto,
-  ) {
-    return this.driversService.apply(user.id, dto);
   }
 
   @Get('me')
@@ -38,47 +45,22 @@ export class DriversController {
     return this.driversService.updateMe(user.id, dto);
   }
 
-  @Get('rides')
-  getMyRides(@CurrentUser() user: CurrentUserType) {
-    return this.driversService.getMyRides(user.id);
+  @Get('earnings/summary')
+  getEarningsSummary(@CurrentUser() user: CurrentUserType) {
+    return this.driversService.getEarningsSummary(user.id);
   }
 
-  @Get('rides/active')
-  getActiveRides(@CurrentUser() user: CurrentUserType) {
-    return this.driversService.getActiveRides(user.id);
-  }
-
-  @Patch('rides/:id/start')
-  startRide(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
-    return this.driversService.startRide(user.id, id);
-  }
-
-  @Patch('rides/:id/complete')
-  completeRide(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
-    return this.driversService.completeRide(user.id, id);
-  }
-
-
-  @Patch('rides/:id/cancel')
-  cancelRide(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
-    return this.driversService.cancelRide(user.id, id);
-  }
-
-  @Get('rides/:id/passengers')
-  getRidePassengers(
+  @Get('earnings/rides/:rideId')
+  getRideEarnings(
     @CurrentUser() user: CurrentUserType,
-    @Param('id') id: string,
+    @Param('rideId') rideId: string,
   ) {
-    return this.driversService.getRidePassengers(user.id, id);
+    return this.driversService.getRideEarnings(user.id, rideId);
   }
 
-
-  @Get('rides/:id')
-  getRideById(
-    @CurrentUser() user: CurrentUserType,
-    @Param('id') id: string,
-  ) {
-    return this.driversService.getRideById(user.id, id);
+  @Get('earnings')
+  getEarnings(@CurrentUser() user: CurrentUserType) {
+    return this.driversService.getEarnings(user.id);
   }
 
   @Get('bookings')
@@ -115,21 +97,44 @@ export class DriversController {
     return this.driversService.rejectBooking(user.id, id);
   }
 
-  @Get('earnings/summary')
-  getEarningsSummary(@CurrentUser() user: CurrentUserType) {
-    return this.driversService.getEarningsSummary(user.id);
+  @Get('rides')
+  getMyRides(@CurrentUser() user: CurrentUserType) {
+    return this.driversService.getMyRides(user.id);
   }
 
-  @Get('earnings/rides/:rideId')
-  getRideEarnings(
+  @Get('rides/active')
+  getActiveRides(@CurrentUser() user: CurrentUserType) {
+    return this.driversService.getActiveRides(user.id);
+  }
+
+  @Patch('rides/:id/start')
+  startRide(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
+    return this.driversService.startRide(user.id, id);
+  }
+
+  @Patch('rides/:id/complete')
+  completeRide(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
+    return this.driversService.completeRide(user.id, id);
+  }
+
+  @Patch('rides/:id/cancel')
+  cancelRide(@CurrentUser() user: CurrentUserType, @Param('id') id: string) {
+    return this.driversService.cancelRide(user.id, id);
+  }
+
+  @Get('rides/:id/passengers')
+  getRidePassengers(
     @CurrentUser() user: CurrentUserType,
-    @Param('rideId') rideId: string,
+    @Param('id') id: string,
   ) {
-    return this.driversService.getRideEarnings(user.id, rideId);
+    return this.driversService.getRidePassengers(user.id, id);
   }
 
-  @Get('earnings')
-  getEarnings(@CurrentUser() user: CurrentUserType) {
-    return this.driversService.getEarnings(user.id);
+  @Get('rides/:id')
+  getRideById(
+    @CurrentUser() user: CurrentUserType,
+    @Param('id') id: string,
+  ) {
+    return this.driversService.getRideById(user.id, id);
   }
 }
