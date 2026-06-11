@@ -26,6 +26,8 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestPhoneOtpDto } from './dto/request-phone-otp.dto';
 import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { VerifyIdentityDto } from './dto/verify-identity.dto';
+import { VerifyFaceDto } from './dto/verify-face.dto';
 
 @Injectable()
 export class AuthService {
@@ -561,6 +563,59 @@ export class AuthService {
       refreshToken,
     };
   }
+
+  async verifyIdentity(userId: string, dto: VerifyIdentityDto) {
+  const user = await this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      isIdentityVerified: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isIdentityVerified: true,
+      isFaceVerified: true,
+    },
+  });
+
+  return {
+    message: 'Identity verified successfully',
+    user,
+    submittedId: {
+      idType: dto.idType,
+      idNumber: dto.idNumber,
+    },
+  };
+}
+
+async verifyFace(userId: string, dto: VerifyFaceDto) {
+  const user = await this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      isFaceVerified: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isIdentityVerified: true,
+      isFaceVerified: true,
+    },
+  });
+
+  return {
+    message: 'Face verified successfully',
+    user,
+    selfieImageUrl: dto.selfieImageUrl,
+  };
+}
 
   
 }

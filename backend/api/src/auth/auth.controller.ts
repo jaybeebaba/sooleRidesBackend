@@ -12,6 +12,9 @@ import { Get, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { VerifyIdentityDto } from './dto/verify-identity.dto';
+import { VerifyFaceDto } from './dto/verify-face.dto';
+import type { CurrentUserType } from '../common/types/current-user.type';
 
 @Controller('auth')
 export class AuthController {
@@ -69,8 +72,23 @@ me(@CurrentUser() user: any) {
 refresh(@Body() dto: RefreshTokenDto) {
   return this.authService.refresh(dto);
 }
+@Post('verify-identity')
+@UseGuards(JwtAuthGuard)
+verifyIdentity(
+  @CurrentUser() user: CurrentUserType,
+  @Body() dto: VerifyIdentityDto,
+) {
+  return this.authService.verifyIdentity(user.id, dto);
+}
 
-
+@Post('verify-face')
+@UseGuards(JwtAuthGuard)
+verifyFace(
+  @CurrentUser() user: CurrentUserType,
+  @Body() dto: VerifyFaceDto,
+) {
+  return this.authService.verifyFace(user.id, dto);
+}
 
 @Post('logout')
 logout(@Body() dto: RefreshTokenDto) {
