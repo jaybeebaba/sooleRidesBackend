@@ -1,40 +1,32 @@
 import * as SecureStore from 'expo-secure-store';
 
-import { STORAGE_KEYS } from '../constants/storageKeys';
+const ACCESS_TOKEN_KEY = 'soolerides_access_token';
+const REFRESH_TOKEN_KEY = 'soolerides_refresh_token';
+const ONBOARDING_SEEN_KEY = 'soolerides_onboarding_seen';
 
-export async function saveTokens(
-  accessToken: string,
-  refreshToken: string,
-) {
-  await SecureStore.setItemAsync(
-    STORAGE_KEYS.ACCESS_TOKEN,
-    accessToken,
-  );
-
-  await SecureStore.setItemAsync(
-    STORAGE_KEYS.REFRESH_TOKEN,
-    refreshToken,
-  );
+export async function saveTokens(accessToken: string, refreshToken: string) {
+  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export async function getAccessToken() {
-  return SecureStore.getItemAsync(
-    STORAGE_KEYS.ACCESS_TOKEN,
-  );
+  return SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
 }
 
 export async function getRefreshToken() {
-  return SecureStore.getItemAsync(
-    STORAGE_KEYS.REFRESH_TOKEN,
-  );
+  return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 }
 
 export async function clearTokens() {
-  await SecureStore.deleteItemAsync(
-    STORAGE_KEYS.ACCESS_TOKEN,
-  );
+  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+}
 
-  await SecureStore.deleteItemAsync(
-    STORAGE_KEYS.REFRESH_TOKEN,
-  );
+export async function markOnboardingSeen() {
+  await SecureStore.setItemAsync(ONBOARDING_SEEN_KEY, 'true');
+}
+
+export async function hasSeenOnboarding() {
+  const value = await SecureStore.getItemAsync(ONBOARDING_SEEN_KEY);
+  return value === 'true';
 }

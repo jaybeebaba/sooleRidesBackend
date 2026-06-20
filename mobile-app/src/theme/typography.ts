@@ -22,4 +22,8 @@ export const typography = {
     fontSize: 14,
     fontWeight: '500' as const,
   },
+  logo:{
+    width: 300,
+    height: 150,
+  }
 };

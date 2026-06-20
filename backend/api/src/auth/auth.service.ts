@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   UnauthorizedException,
+  NotFoundException
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -32,7 +33,9 @@ import { VerifyFaceDto } from './dto/verify-face.dto';
 @Injectable()
 export class AuthService {
   private readonly googleClient = new OAuth2Client();
-
+private generateOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -617,5 +620,93 @@ async verifyFace(userId: string, dto: VerifyFaceDto) {
   };
 }
 
+async forgotPassword(email: string) {
+  const user = await this.prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new NotFoundException('User with this email does not exist');
+  }
+
+  const otp = this.generateOtp();
+
+  await this.prisma.passwordResetOtp.create({
+    data: {
+      email,
+      otp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    },
+  });
+
+  return {
+    message: 'Password reset OTP generated successfully',
+    otp, // remove this later when real email sending is added
+  };
+}
+
+async verifyResetOtp(email: string, otp: string) {
+  const resetOtp = await this.prisma.passwordResetOtp.findFirst({
+    where: {
+      email,
+      otp,
+      used: false,
+      expiresAt: {
+        gt: new Date(),
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  if (!resetOtp) {
+    throw new BadRequestException('Invalid or expired OTP');
+  }
+
+  return {
+    message: 'OTP verified successfully',
+  };
+}
+
+async resetPassword(email: string, otp: string, newPassword: string) {
+  const resetOtp = await this.prisma.passwordResetOtp.findFirst({
+    where: {
+      email,
+      otp,
+      used: false,
+      expiresAt: {
+        gt: new Date(),
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  if (!resetOtp) {
+    throw new BadRequestException('Invalid or expired OTP');
+  }
+
+  const hashedPassword = await argon2.hash(newPassword);
+
+  await this.prisma.user.update({
+    where: { email },
+    data: {
+      passwordHash: hashedPassword,
+    },
+  });
+
+  await this.prisma.passwordResetOtp.update({
+    where: { id: resetOtp.id },
+    data: {
+      used: true,
+    },
+  });
+
+  return {
+    message: 'Password reset successfully',
+  };
+}
   
 }

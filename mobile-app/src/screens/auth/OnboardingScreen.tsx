@@ -15,7 +15,9 @@ import { AppScreen } from '../../components/layout/AppScreen';
 import { AppButton } from '../../components/ui/AppButton';
 import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { markOnboardingSeen } from '../../utils/tokenStorage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
@@ -25,22 +27,24 @@ export function OnboardingScreen({ navigation }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  const goNext = () => {
-    if (currentIndex < onboardingSlides.length - 1) {
-      flatListRef.current?.scrollToIndex({
-        index: currentIndex + 1,
-        animated: true,
-      });
+  const goNext = async () => {
+  if (currentIndex < onboardingSlides.length - 1) {
+    flatListRef.current?.scrollToIndex({
+      index: currentIndex + 1,
+      animated: true,
+    });
 
-      return;
-    }
+    return;
+  }
 
-    navigation.replace('Login');
-  };
+  await markOnboardingSeen();
+  navigation.replace('Login');
+};
 
-  const skipOnboarding = () => {
-    navigation.replace('Login');
-  };
+const skipOnboarding = async () => {
+  await markOnboardingSeen();
+  navigation.replace('Login');
+};
 
   return (
     <AppScreen>
@@ -120,21 +124,20 @@ export function OnboardingScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
   },
   logo: {
-    width: 400,
-    height: 150,
+    ...typography.logo,
     alignSelf: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   slide: {
     width: width - 48,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 8,
+    paddingBottom: spacing.sm,
   },
   illustration: {
     width: width * 0.68,
@@ -142,19 +145,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    ...typography.headingMedium,
     textAlign: 'center',
-    color: '#111827',
-    lineHeight: 30,
-    marginTop: 8,
+    color: colors.black,
+    marginTop: spacing.sm,
   },
   description: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 21,
+    ...typography.body,
     textAlign: 'center',
-    color: '#6B7280',
+    color: colors.gray,
     marginTop: 10,
     paddingHorizontal: 14,
   },
@@ -165,23 +164,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   dot: {
     width: 10,
     height: 10,
-    borderRadius: 99,
-    backgroundColor: '#E5E7EB',
+    borderRadius: 999,
+    backgroundColor: colors.lightGray,
     marginHorizontal: 6,
   },
   activeDot: {
     width: 38,
-    backgroundColor: '#F97316',
+    backgroundColor: colors.primary,
   },
   skipText: {
     marginTop: 20,
     textAlign: 'center',
-    color: '#6B7280',
+    color: colors.gray,
     fontSize: 16,
     fontWeight: '500',
   },

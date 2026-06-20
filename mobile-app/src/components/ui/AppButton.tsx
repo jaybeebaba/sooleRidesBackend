@@ -6,6 +6,9 @@ import {
   ViewStyle,
 } from 'react-native';
 
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+
 type AppButtonProps = {
   title: string;
   onPress: () => void;
@@ -42,7 +45,7 @@ export function AppButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#FFFFFF' : '#F97316'} />
+        <ActivityIndicator color={isPrimary ? colors.white : colors.primary} />
       ) : (
         <Text
           style={[
@@ -61,18 +64,18 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   button: {
-    height: 45,
-    borderRadius: 17,
+    height: 54,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   primary: {
-    backgroundColor: '#F97316',
+    backgroundColor: colors.primary,
   },
   outline: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: '#F97316',
+    borderColor: colors.primary,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -81,16 +84,15 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   text: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.button,
   },
   primaryText: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
   outlineText: {
-    color: '#F97316',
+    color: colors.primary,
   },
   ghostText: {
-    color: '#6B7280',
+    color: colors.gray,
   },
 });

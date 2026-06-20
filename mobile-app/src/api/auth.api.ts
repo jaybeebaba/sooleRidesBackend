@@ -1,37 +1,81 @@
-import { apiClient } from './client';
+import { api } from './client';
+
 import type {
   AuthResponse,
   LoginPayload,
   RegisterPayload,
 } from '../types/auth.types';
 
-export async function registerUser(payload: RegisterPayload) {
-  const response = await apiClient.post<AuthResponse>(
-    '/auth/register-email',
-    payload,
-  );
-
-  return response.data;
-}
-
-export async function loginUser(payload: LoginPayload) {
-  const response = await apiClient.post<AuthResponse>(
+export async function login(payload: LoginPayload) {
+  const { data } = await api.post<AuthResponse>(
     '/auth/login-email',
     payload,
   );
 
-  return response.data;
+  return data;
 }
 
-export async function getMe() {
-  const response = await apiClient.get('/auth/me');
-  return response.data;
+export async function register(payload: RegisterPayload) {
+  const { data } = await api.post<AuthResponse>(
+    '/auth/register-email',
+    payload,
+  );
+
+  return data;
 }
 
-export async function logoutUser(refreshToken: string) {
-  const response = await apiClient.post('/auth/logout', {
+export async function getCurrentUser() {
+  const { data } = await api.get('/auth/me');
+
+  return data.user ?? data;
+}
+
+export async function logout(refreshToken: string) {
+  const { data } = await api.post('/auth/logout', {
     refreshToken,
   });
 
-  return response.data;
+  return data;
+}
+
+export async function refreshToken(refreshToken: string) {
+  const { data } = await api.post<AuthResponse>(
+    '/auth/refresh',
+    {
+      refreshToken,
+    },
+  );
+
+  return data;
+}
+
+export async function forgotPassword(email: string) {
+  const { data } = await api.post('/auth/forgot-password', {
+    email,
+  });
+
+  return data;
+}
+
+export async function verifyResetOtp(email: string, otp: string) {
+  const { data } = await api.post('/auth/verify-reset-otp', {
+    email,
+    otp,
+  });
+
+  return data;
+}
+
+export async function resetPassword(
+  email: string,
+  otp: string,
+  newPassword: string,
+) {
+  const { data } = await api.post('/auth/reset-password', {
+    email,
+    otp,
+    newPassword,
+  });
+
+  return data;
 }

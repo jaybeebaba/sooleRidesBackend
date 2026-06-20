@@ -15,6 +15,9 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { VerifyIdentityDto } from './dto/verify-identity.dto';
 import { VerifyFaceDto } from './dto/verify-face.dto';
 import type { CurrentUserType } from '../common/types/current-user.type';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -88,6 +91,25 @@ verifyFace(
   @Body() dto: VerifyFaceDto,
 ) {
   return this.authService.verifyFace(user.id, dto);
+}
+
+@Post('forgot-password')
+forgotPassword(@Body() dto: ForgotPasswordDto) {
+  return this.authService.forgotPassword(dto.email);
+}
+
+@Post('verify-reset-otp')
+verifyResetOtp(@Body() dto: VerifyResetOtpDto) {
+  return this.authService.verifyResetOtp(dto.email, dto.otp);
+}
+
+@Post('reset-password')
+resetPassword(@Body() dto: ResetPasswordDto) {
+  return this.authService.resetPassword(
+    dto.email,
+    dto.otp,
+    dto.newPassword,
+  );
 }
 
 @Post('logout')

@@ -1,9 +1,11 @@
+export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SUPER_ADMIN';
+
 export type AuthUser = {
   id: string;
   fullName: string | null;
   email: string | null;
   phone: string | null;
-  role: 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SUPER_ADMIN';
+  role: UserRole;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   isIdentityVerified: boolean;
@@ -17,14 +19,14 @@ export type AuthResponse = {
   refreshToken: string;
 };
 
+export type LoginPayload = {
+  email: string;
+  password: string;
+};
+
 export type RegisterPayload = {
   fullName: string;
   email: string;
   phone: string;
-  password: string;
-};
-
-export type LoginPayload = {
-  email: string;
   password: string;
 };

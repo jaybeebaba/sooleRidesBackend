@@ -1,14 +1,17 @@
 import { create } from 'zustand';
 
-import type { AuthUser } from '../types/auth.types';
+import { getCurrentUser, login, logout, register } from '../api/auth.api';
+import type {
+  AuthUser,
+  LoginPayload,
+  RegisterPayload,
+} from '../types/auth.types';
 import {
   clearTokens,
   getAccessToken,
   getRefreshToken,
   saveTokens,
 } from '../utils/tokenStorage';
-import { getMe, loginUser, logoutUser, registerUser } from '../api/auth.api';
-import type { LoginPayload, RegisterPayload } from '../types/auth.types';
 
 type AuthState = {
   user: AuthUser | null;
@@ -17,10 +20,10 @@ type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  register: (payload: RegisterPayload) => Promise<void>;
-  login: (payload: LoginPayload) => Promise<void>;
+  loginUser: (payload: LoginPayload, rememberMe?: boolean) => Promise<void>;
+  registerUser: (payload: RegisterPayload) => Promise<void>;
   loadUser: () => Promise<void>;
-  logout: () => Promise<void>;
+  logoutUser: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -30,30 +33,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: false,
 
-  register: async (payload) => {
-    set({ isLoading: true });
+  loginUser: async (payload, rememberMe = true) => {
+  set({ isLoading: true });
 
-    try {
-      const data = await registerUser(payload);
+  try {
+    const data = await login(payload);
 
+    if (rememberMe) {
       await saveTokens(data.accessToken, data.refreshToken);
-
-      set({
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        isAuthenticated: true,
-      });
-    } finally {
-      set({ isLoading: false });
+    } else {
+      await clearTokens();
     }
-  },
 
-  login: async (payload) => {
+    set({
+      user: data.user,
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      isAuthenticated: true,
+    });
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+  registerUser: async (payload) => {
     set({ isLoading: true });
 
     try {
-      const data = await loginUser(payload);
+      const data = await register(payload);
 
       await saveTokens(data.accessToken, data.refreshToken);
 
@@ -85,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      const user = await getMe();
+      const user = await getCurrentUser();
 
       set({
         user,
@@ -107,13 +114,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  logout: async () => {
-    const refreshToken = get().refreshToken;
+  logoutUser: async () => {
+  const refreshToken = get().refreshToken;
 
+  try {
     if (refreshToken) {
-      await logoutUser(refreshToken);
+      await logout(refreshToken);
     }
-
+  } catch {
+    // Even if backend logout fails, still clear local session.
+  } finally {
     await clearTokens();
 
     set({
@@ -122,5 +132,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: null,
       isAuthenticated: false,
     });
-  },
+  }
+},
 }));

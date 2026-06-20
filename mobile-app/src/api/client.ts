@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { getAccessToken } from '../utils/tokenStorage';
 
-export const apiClient = axios.create({
+export const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   timeout: 15000,
   headers: {
@@ -10,7 +10,7 @@ export const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use(
+api.interceptors.request.use(
   async (config) => {
     const token = await getAccessToken();
 
