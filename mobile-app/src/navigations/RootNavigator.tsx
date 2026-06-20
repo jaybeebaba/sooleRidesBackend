@@ -9,6 +9,7 @@ import { SplashScreen } from '../screens/auth/SplashScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { VerifyResetOtpScreen } from '../screens/auth/VerifyResetOtpScreen';
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
+import { EmailVerificationScreen } from '../screens/auth/EmailVerificationScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -24,6 +25,7 @@ export type RootStackParamList = {
     email: string;
     otp: string;
   };
+  EmailVerification: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -45,6 +47,7 @@ export function RootNavigator() {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="VerifyResetOtp" component={VerifyResetOtpScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -85,7 +85,7 @@ export function SplashScreen({ navigation }: Props) {
           />
         </Animated.View>
 
-        <ActivityIndicator size="small" color="#F97316" style={styles.loader} />
+        <ActivityIndicator size="large" color="#F97316" style={styles.loader} />
 
         <Text style={styles.caption}>Ride smarter. Travel better.</Text>
       </View>

@@ -19,6 +19,7 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { KeyboardAwareScreen } from '../../components/layout/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
@@ -58,7 +59,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
   };
 
   return (
-    <AppScreen>
+    <KeyboardAwareScreen>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -97,7 +98,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </AppScreen>
+    </KeyboardAwareScreen>
   );
 }
 

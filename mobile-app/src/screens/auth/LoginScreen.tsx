@@ -14,12 +14,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AppButton } from '../../components/ui/AppButton';
 import { AppInput } from '../../components/ui/AppInput';
-import { AppScreen } from '../../components/layout/AppScreen';
 import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { KeyboardAwareScreen } from '../../components/layout/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -63,7 +63,7 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <AppScreen>
+    <KeyboardAwareScreen>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -176,7 +176,7 @@ export function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </AppScreen>
+    </KeyboardAwareScreen>
   );
 }
 

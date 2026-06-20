@@ -79,3 +79,20 @@ export async function resetPassword(
 
   return data;
 }
+
+export async function requestEmailVerification(email: string) {
+  const { data } = await api.post('/auth/request-email-verification', {
+    email,
+  });
+
+  return data;
+}
+
+export async function verifyEmail(email: string, otp: string) {
+  const { data } = await api.post('/auth/verify-email', {
+    email,
+    code: otp,
+  });
+
+  return data;
+}
