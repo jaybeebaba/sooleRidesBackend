@@ -18,6 +18,7 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { KeyboardAwareScreen } from '../../components/layout/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ResetPassword'>;
 
@@ -53,21 +54,28 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
 
       await resetPassword(email, otp, newPassword);
 
-      Alert.alert('Password reset', 'Your password has been reset successfully.', [
-        {
-          text: 'Login',
-          onPress: () => navigation.replace('Login'),
-        },
-      ]);
+      navigation.replace('AuthStatus', {
+        type: 'success',
+        title: 'Password Reset Successful',
+        message: 'Your password has been reset successfully. You can now log in with your new password.',
+        buttonText: 'Go to Login',
+        action: 'goLogin',
+      });
     } catch {
-      Alert.alert('Reset failed', 'Could not reset password. Please try again.');
+      navigation.replace('AuthStatus', {
+        type: 'error',
+        title: 'Reset Failed',
+        message: 'Could not reset your password. Please try again.',
+        buttonText: 'Try Again',
+        action: 'goForgotPassword',
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AppScreen>
+    <KeyboardAwareScreen>
       <View style={styles.container}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <FontAwesome name="arrow-left" size={22} color={colors.black} />
@@ -136,7 +144,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
           />
         </View>
       </View>
-    </AppScreen>
+    </KeyboardAwareScreen>
   );
 }
 

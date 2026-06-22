@@ -12,7 +12,6 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { forgotPassword } from '../../api/auth.api';
-import { AppScreen } from '../../components/layout/AppScreen';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppInput } from '../../components/ui/AppInput';
 import type { RootStackParamList } from '../../navigations/RootNavigator';
@@ -28,35 +27,47 @@ export function ForgotPasswordScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!email.trim()) {
-      Alert.alert('Missing email', 'Please enter your email address.');
-      return;
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    navigation.replace('AuthStatus', {
+      type: 'error',
+      title: 'Missing Email',
+      message: 'Please enter your email address to reset your password.',
+      buttonText: 'Try Again',
+      action: 'goForgotPassword',
+    });
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+
+    const response = await forgotPassword(normalizedEmail);
+
+    if (response?.otp) {
+      Alert.alert('Reset OTP', `Use this test OTP: ${response.otp}`);
+    } else {
+      Alert.alert('OTP Sent', 'Please check your email for the reset OTP.');
     }
 
-    try {
-      setIsLoading(true);
-
-      const response = await forgotPassword(email.trim().toLowerCase());
-
-      Alert.alert(
-        'OTP sent',
-        response?.otp
-          ? `Use this test OTP: ${response.otp}`
-          : 'Please check your email for the reset OTP.',
-      );
-
-      navigation.navigate('VerifyResetOtp', {
-        email: email.trim().toLowerCase(),
-      });
-    } catch {
-      Alert.alert(
-        'Request failed',
-        'Could not start password reset. Please try again.',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    navigation.navigate('VerifyResetOtp', {
+      email: normalizedEmail,
+    });
+  } catch (error: any) {
+    navigation.replace('AuthStatus', {
+      type: 'error',
+      title: 'Request Failed',
+      message:
+        error?.response?.data?.message ||
+        'Could not start password reset. Please check the email and try again.',
+      buttonText: 'Try Again',
+      action: 'goForgotPassword',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <KeyboardAwareScreen>

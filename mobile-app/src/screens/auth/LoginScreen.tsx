@@ -26,6 +26,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 export function LoginScreen({ navigation }: Props) {
   const loginUser = useAuthStore((state) => state.loginUser);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const loadUser = useAuthStore((state) => state.loadUser);
+
+  
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,8 +50,11 @@ export function LoginScreen({ navigation }: Props) {
   },
   rememberMe,
 );
-
-      navigation.replace('Home');
+await loadUser()
+      navigation.reset({
+  index: 0,
+  routes: [{ name: 'Home' }],
+});
     } catch {
       Alert.alert('Login failed', 'Please check your details and try again.');
     }

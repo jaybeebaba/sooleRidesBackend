@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { HomeScreen } from '../screens/shared/HomeScreen';
+// import { HomeScreen } from '../screens/shared/HomeScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
@@ -10,6 +10,12 @@ import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { VerifyResetOtpScreen } from '../screens/auth/VerifyResetOtpScreen';
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
 import { EmailVerificationScreen } from '../screens/auth/EmailVerificationScreen';
+import { PhoneVerificationScreen } from '../screens/auth/PhoneVerificationScreen';
+import { AuthStatusScreen } from '../screens/auth/AuthStatusScreen';
+import { MainTabNavigator } from './MainTabNavigator';
+import { RideDetailsScreen } from '../screens/passenger/RideDetailsScreen';
+import { BookingConfirmationScreen } from '../screens/passenger/BookingConfirmationScreen';
+import { EmergencyContactsScreen } from '../screens/passenger/EmergencyContactsScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -18,14 +24,43 @@ export type RootStackParamList = {
   Register: undefined;
   Home: undefined;
   ForgotPassword: undefined;
+
   VerifyResetOtp: {
     email: string;
   };
+
   ResetPassword: {
     email: string;
     otp: string;
   };
+
   EmailVerification: undefined;
+  PhoneVerification: undefined;
+
+  AuthStatus: {
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+    buttonText: string;
+    action:
+    | 'goHome'
+    | 'goLogin'
+    | 'goEmailVerification'
+    | 'goPhoneVerification'
+    | 'goForgotPassword'
+    | 'goVerifyResetOtp'
+    | 'goResetPassword'
+    email?: string;
+  };
+  RideDetails: {
+    rideId: string;
+  };
+
+  BookingConfirmation: {
+    bookingId: string;
+  };
+
+  EmergencyContacts: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,11 +78,17 @@ export function RootNavigator() {
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+        {/* <Stack.Screen name="Home" component={HomeScreen} /> */}
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="VerifyResetOtp" component={VerifyResetOtpScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+        <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AuthStatus" component={AuthStatusScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Home" component={MainTabNavigator} options={{ headerShown: false }}/>
+        <Stack.Screen name="RideDetails" component={RideDetailsScreen} />
+        <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
+        <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

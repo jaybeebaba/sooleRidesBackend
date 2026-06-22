@@ -5,11 +5,11 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-export function RideDetailsScreen() {
+export function DriverHomeScreen() {
   return (
     <AppScreen>
       <View style={styles.container}>
-        <Text style={styles.title}>Ride Details</Text>
+        <Text style={styles.title}>Driver Home</Text>
         <Text style={styles.subtitle}>
           Your driver dashboard will appear here.
         </Text>

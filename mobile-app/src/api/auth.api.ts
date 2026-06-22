@@ -96,3 +96,20 @@ export async function verifyEmail(email: string, otp: string) {
 
   return data;
 }
+
+export async function requestPhoneVerification(phone: string) {
+  const response = await api.post('/auth/request-phone-otp', {
+    phone,
+  });
+
+  return response.data;
+}
+
+export async function verifyPhone(phone: string, code: string) {
+  const response = await api.post('/auth/verify-phone-otp', {
+    phone,
+    code,
+  });
+
+  return response.data;
+}

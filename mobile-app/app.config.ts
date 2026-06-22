@@ -10,5 +10,6 @@ export default {
     },
 
     plugins: ['expo-secure-store', 'expo-dev-client'],
+    
   },
 };

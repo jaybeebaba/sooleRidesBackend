@@ -74,11 +74,18 @@ export function EmailVerificationScreen({ navigation }: Props) {
     const handleVerify = async (code = otp) => {
         if (!email) {
             Alert.alert('Error', 'No email found for this user.');
+            
             return;
         }
 
         if (code.length !== 6) {
-            Alert.alert('Invalid Code', 'Please enter all 6 digits.');
+            navigation.replace('AuthStatus', {
+                type: 'error',
+                title: 'Invalid Code',
+                message: 'Please enter all 6 digits to continue.',
+                buttonText: 'Try Again',
+                action: 'goEmailVerification',
+            });
             return;
         }
 
@@ -88,11 +95,21 @@ export function EmailVerificationScreen({ navigation }: Props) {
             await verifyEmail(email, code);
             await loadUser();
 
-            Alert.alert('Success', 'Email verified successfully.');
-
-            navigation.replace('Home');
+            navigation.replace('AuthStatus', {
+                type: 'success',
+                title: 'E-mail Address Verified',
+                message: 'Your email address has been verified successfully.',
+                buttonText: 'Continue',
+                action: 'goPhoneVerification',
+            });
         } catch {
-            Alert.alert('Verification Failed', 'Invalid or expired code.');
+            navigation.replace('AuthStatus', {
+                type: 'error',
+                title: 'Verification Failed',
+                message: 'The code you entered is invalid or has expired.',
+                buttonText: 'Try Again',
+                action: 'goEmailVerification',
+            });
         } finally {
             setLoading(false);
         }
