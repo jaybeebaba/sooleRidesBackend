@@ -17,10 +17,12 @@ import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { useRideSearchStore } from '../../store/rideSearch.store';
 
 export function PassengerHomeScreen() {
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
+  const setSearchParams = useRideSearchStore((state) => state.setSearchParams);
   
 
  
@@ -44,29 +46,30 @@ export function PassengerHomeScreen() {
   };
 
   const handleSearch = () => {
-    const cleanOrigin = origin.trim();
-    const cleanDestination = destination.trim();
-    const cleanSeats = seats.trim();
+  const cleanOrigin = origin.trim();
+  const cleanDestination = destination.trim();
+  const cleanDate = date.trim();
+  const cleanSeats = seats.trim();
 
-    if (!cleanOrigin || !cleanDestination) {
-      Alert.alert('Missing route', 'Please enter both departure and destination.');
-      return;
-    }
+  if (!cleanOrigin || !cleanDestination) {
+    Alert.alert('Missing route', 'Please enter both departure and destination.');
+    return;
+  }
 
-    if (cleanSeats && Number(cleanSeats) < 1) {
-      Alert.alert('Invalid seats', 'Seats must be at least 1.');
-      return;
-    }
+  if (cleanSeats && Number(cleanSeats) < 1) {
+    Alert.alert('Invalid seats', 'Seats must be at least 1.');
+    return;
+  }
 
-    console.log({
-      origin: cleanOrigin,
-      destination: cleanDestination,
-      date: date,
-      seats: cleanSeats ? Number(cleanSeats) : undefined,
-    });
+  setSearchParams({
+    origin: cleanOrigin,
+    destination: cleanDestination,
+    date: cleanDate || undefined,
+    seats: cleanSeats ? Number(cleanSeats) : undefined,
+  });
 
-    navigation.navigate('SearchTab');
-  };
+  navigation.navigate('SearchTab');
+};
 
   return (
     <AppScreen>
@@ -82,7 +85,7 @@ export function PassengerHomeScreen() {
 
           <View style={styles.headerText}>
             <Text style={styles.greeting}>
-              Good day, {user?.fullName?.split(' ')[0] || 'Passenger'}
+              Hi, {user?.fullName?.split(' ')[0] || 'Passenger'}
             </Text>
 
             <View style={styles.locationRow}>

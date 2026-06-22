@@ -57,7 +57,7 @@ export type RootStackParamList = {
   };
 
   BookingConfirmation: {
-    bookingId: string;
+    rideId: string;
   };
 
   EmergencyContacts: undefined;
@@ -85,7 +85,7 @@ export function RootNavigator() {
         <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         <Stack.Screen name="PhoneVerification" component={PhoneVerificationScreen} options={{ headerShown: false }} />
         <Stack.Screen name="AuthStatus" component={AuthStatusScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={MainTabNavigator} options={{ headerShown: false }}/>
+        <Stack.Screen name="Home" component={MainTabNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="RideDetails" component={RideDetailsScreen} />
         <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
         <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
