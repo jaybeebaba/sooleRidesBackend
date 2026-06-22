@@ -34,13 +34,27 @@ export function AuthStatusScreen({ navigation, route }: Props) {
     if (action === 'goPhoneVerification') {
       navigation.replace('PhoneVerification');
     }
-   if (action === 'goForgotPassword') {
-  navigation.replace('ForgotPassword');
-  return;
-}
+    if (action === 'goForgotPassword') {
+      navigation.replace('ForgotPassword');
+      return;
+    }
+    if (action === 'goTrips') {
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Home',
+            params: {
+              screen: 'TripsTab',
+            },
+          },
+        ],
+      });
+      return;
+    }
 
 
-    
+
   };
 
   return (

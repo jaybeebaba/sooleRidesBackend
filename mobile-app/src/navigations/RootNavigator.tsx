@@ -16,6 +16,7 @@ import { MainTabNavigator } from './MainTabNavigator';
 import { RideDetailsScreen } from '../screens/passenger/RideDetailsScreen';
 import { BookingConfirmationScreen } from '../screens/passenger/BookingConfirmationScreen';
 import { EmergencyContactsScreen } from '../screens/passenger/EmergencyContactsScreen';
+import { PaymentScreen } from '../screens/passenger/PaymentScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -49,11 +50,19 @@ export type RootStackParamList = {
     | 'goPhoneVerification'
     | 'goForgotPassword'
     | 'goVerifyResetOtp'
-    | 'goResetPassword'
+    | 'goTrips';
     email?: string;
   };
   RideDetails: {
-    rideId: string;
+  rideId: string;
+  bookingId?: string;
+  bookingStatus?: string;
+  totalAmount?: number;
+};
+
+  Payment: {
+    bookingId: string;
+    amount: number;
   };
 
   BookingConfirmation: {
@@ -89,6 +98,11 @@ export function RootNavigator() {
         <Stack.Screen name="RideDetails" component={RideDetailsScreen} />
         <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
         <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
+        <Stack.Screen
+          name="Payment"
+          component={PaymentScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -18,6 +18,7 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { cancelBooking } from '../../api/bookings.api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RideDetails'>;
 
@@ -35,19 +36,53 @@ type RideDetails = {
     phone?: string;
   };
   vehicle?: {
-    brand: string;
-    model: string;
-    color: string;
-    plateNumber: string;
+    brand?: string;
+    model?: string;
+    color?: string;
+    plateNumber?: string;
   };
 };
 
 export function RideDetailsScreen({ navigation, route }: Props) {
-  const { rideId } = route.params;
-
+ 
   const [ride, setRide] = useState<RideDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const { rideId, bookingId, bookingStatus, totalAmount } = route.params;
+
+  const isFromMyTrips = Boolean(bookingId);
+  const canPay = bookingStatus === 'PAYMENT_PENDING';
+  const canCancel =
+    bookingStatus !== 'COMPLETED' &&
+    bookingStatus !== 'PASSENGER_CANCELLED' &&
+    bookingStatus !== 'DRIVER_CANCELLED';
+
+
+    const handleCancelBooking = async () => {
+  if (!bookingId) return;
+
+  try {
+    await cancelBooking(bookingId);
+
+    Alert.alert(
+      'Booking Cancelled',
+      'Your booking has been cancelled successfully.',
+      [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ],
+    );
+  } catch (error) {
+    console.log('CANCEL BOOKING ERROR:', error);
+
+    Alert.alert(
+      'Cancellation Failed',
+      'Could not cancel booking. Please try again.',
+    );
+  }
+};
   useEffect(() => {
     const fetchRide = async () => {
       try {
@@ -84,6 +119,16 @@ export function RideDetailsScreen({ navigation, route }: Props) {
     );
   }
 
+  const driverName = ride.driver?.fullName || 'SooleRides Driver';
+
+  const vehicleName = [
+    ride.vehicle?.brand,
+    ride.vehicle?.model,
+    ride.vehicle?.color,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <AppScreen>
       <ScrollView
@@ -94,70 +139,132 @@ export function RideDetailsScreen({ navigation, route }: Props) {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
+          activeOpacity={0.8}
         >
-          <FontAwesome name="arrow-left" size={22} color={colors.black} />
+          <FontAwesome name="chevron-left" size={16} color={colors.white} />
         </TouchableOpacity>
 
         <Text style={styles.title}>Ride Details</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.route}>
-            {ride.origin} → {ride.destination}
-          </Text>
-
-          <Text style={styles.meta}>
-            Departure: {new Date(ride.departureTime).toLocaleString()}
-          </Text>
-
-          {ride.estimatedArrivalTime && (
-            <Text style={styles.meta}>
-              Arrival: {new Date(ride.estimatedArrivalTime).toLocaleString()}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Seats & Price</Text>
-
-          <Text style={styles.meta}>
-            Available seats: {ride.availableSeats} of {ride.totalSeats}
-          </Text>
-
-          <Text style={styles.price}>₦{ride.pricePerSeat} per seat</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Driver</Text>
-
-          <Text style={styles.meta}>
-            {ride.driver?.fullName || 'Driver information unavailable'}
-          </Text>
-
-          {ride.driver?.phone && (
-            <Text style={styles.meta}>{ride.driver.phone}</Text>
-          )}
-        </View>
-
-        {ride.vehicle && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Vehicle</Text>
-
-            <Text style={styles.meta}>
-              {ride.vehicle.color} {ride.vehicle.brand} {ride.vehicle.model}
-            </Text>
-
-            <Text style={styles.meta}>Plate: {ride.vehicle.plateNumber}</Text>
+        <View style={styles.rideCard}>
+          <View style={styles.driverAvatar}>
+            <FontAwesome name="user" size={22} color={colors.white} />
           </View>
-        )}
 
-        <AppButton
-          title="Book Ride"
-          onPress={() =>
-            navigation.navigate('BookingConfirmation', {
-              rideId: ride.id,
-            })
-          }
-        />
+          <View style={styles.driverRow}>
+            <Text style={styles.driverName}>{driverName}</Text>
+            <FontAwesome name="check-circle" size={16} color={colors.success} />
+          </View>
+
+          <View style={styles.vehicleRow}>
+            <Text style={styles.vehicleText}>
+              {vehicleName || 'Vehicle details unavailable'}
+              {ride.vehicle?.plateNumber ? ` • ${ride.vehicle.plateNumber}` : ''}
+            </Text>
+
+            <Text style={styles.ratingText}>★ New driver</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.detailBlock}>
+            <View style={styles.detailTitleRow}>
+              <FontAwesome name="map-marker" size={14} color={colors.gray} />
+              <Text style={styles.detailTitle}>Pick Up</Text>
+            </View>
+
+            <Text style={styles.detailText}>{ride.origin}</Text>
+            <Text style={styles.detailSubText}>
+              Time: {new Date(ride.departureTime).toLocaleString()}
+            </Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.detailBlock}>
+            <View style={styles.detailTitleRow}>
+              <FontAwesome name="map-marker" size={14} color={colors.gray} />
+              <Text style={styles.detailTitle}>Drop Off</Text>
+            </View>
+
+            <Text style={styles.detailText}>{ride.destination}</Text>
+
+            {ride.estimatedArrivalTime && (
+              <Text style={styles.detailSubText}>
+                Estimated Arrival:{' '}
+                {new Date(ride.estimatedArrivalTime).toLocaleString()}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Available Seats</Text>
+            <Text style={styles.summaryValue}>
+              {ride.availableSeats} of {ride.totalSeats}
+            </Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Price Per Seat</Text>
+            <Text style={styles.amount}>₦{ride.pricePerSeat}</Text>
+          </View>
+        </View>
+
+        <View style={styles.buttonWrapper}>
+          {isFromMyTrips ? (
+  <View>
+    {canPay && (
+      <AppButton
+        title="Pay Now"
+        onPress={() =>
+          navigation.navigate('Payment', {
+            bookingId: bookingId!,
+            amount: totalAmount || 0,
+          })
+        }
+      />
+    )}
+
+    {canCancel && (
+      <TouchableOpacity
+  style={styles.cancelButton}
+  onPress={() => {
+    Alert.alert(
+      'Cancel Booking',
+      'Are you sure you want to cancel this booking?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: handleCancelBooking,
+        },
+      ],
+    );
+  }}
+>
+  <Text style={styles.cancelText}>Cancel Booking</Text>
+</TouchableOpacity>
+    )}
+  </View>
+) : (
+  <AppButton
+    title="Book Ride"
+    onPress={() =>
+      navigation.navigate('BookingConfirmation', {
+        rideId: ride.id,
+      })
+    }
+  />
+)}
+        </View>
       </ScrollView>
     </AppScreen>
   );
@@ -177,43 +284,144 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.black,
+    alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
   title: {
-    ...typography.headingLarge,
+    ...typography.headingMedium,
     color: colors.black,
+    textAlign: 'center',
     marginBottom: spacing.lg,
   },
-  card: {
+  rideCard: {
     backgroundColor: colors.lightGray,
     borderRadius: 14,
     padding: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xl,
   },
-  route: {
-    ...typography.headingMedium,
-    color: colors.black,
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.black,
+  driverAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: colors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
     marginBottom: spacing.sm,
   },
-  meta: {
-    ...typography.body,
-    color: colors.gray,
+  driverRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  driverName: {
+    ...typography.caption,
+    color: colors.black,
+    textAlign: 'center',
+  },
+  vehicleRow: {
     marginTop: spacing.xs,
   },
-  price: {
-    ...typography.headingMedium,
+  vehicleText: {
+    ...typography.body,
+    color: colors.black,
+    textAlign: 'center',
+  },
+  ratingText: {
+    ...typography.body,
+    color: colors.black,
+    textAlign: 'right',
+    marginTop: spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.sm,
+  },
+  detailBlock: {
+    gap: spacing.xs,
+  },
+  detailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  detailTitle: {
+    ...typography.caption,
+    color: colors.black,
+  },
+  detailText: {
+    ...typography.body,
+    color: colors.black,
+  },
+  detailSubText: {
+    ...typography.body,
+    color: colors.gray,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    ...typography.caption,
+    color: colors.black,
+  },
+  summaryValue: {
+    ...typography.caption,
+    color: colors.black,
+  },
+  amount: {
+    ...typography.caption,
     color: colors.primary,
-    marginTop: spacing.sm,
+  },
+  buttonWrapper: {
+    marginTop: spacing.lg,
   },
   emptyText: {
     ...typography.body,
     color: colors.gray,
   },
+
+  cancelButton: {
+  marginTop: spacing.md,
+  borderWidth: 1,
+  borderColor: colors.danger,
+  borderRadius: 12,
+  paddingVertical: spacing.md,
+  alignItems: 'center',
+},
+
+cancelText: {
+  ...typography.caption,
+  color: colors.danger,
+},
+
+actionContainer: {
+  marginTop: spacing.lg,
+},
+
+actionSpacing: {
+  marginBottom: spacing.md,
+},
+
+statusBadge: {
+  alignSelf: 'flex-start',
+  backgroundColor: colors.lightGray,
+  paddingHorizontal: spacing.sm,
+  paddingVertical: spacing.xs,
+  borderRadius: 8,
+  marginTop: spacing.sm,
+},
+
+statusText: {
+  ...typography.body,
+  color: colors.black,
+},
 });

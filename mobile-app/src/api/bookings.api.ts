@@ -10,3 +10,15 @@ export async function createBooking(payload: CreateBookingPayload) {
 
   return response.data;
 }
+
+export async function getMyBookings() {
+  const response = await api.get('/bookings/my-bookings');
+
+  return response.data;
+}
+
+export async function cancelBooking(bookingId: string) {
+  const response = await api.patch(`/bookings/${bookingId}/cancel`);
+
+  return response.data;
+}
