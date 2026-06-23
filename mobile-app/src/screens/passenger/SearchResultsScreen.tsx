@@ -19,23 +19,7 @@ import { useRideSearchStore } from '../../store/rideSearch.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-
-type Ride = {
-  id: string;
-  origin: string;
-  destination: string;
-  departureTime: string;
-  pricePerSeat: number;
-  availableSeats: number;
-  driver?: {
-    fullName?: string;
-  };
-  vehicle?: {
-    brand?: string;
-    model?: string;
-    plateNumber?: string;
-  };
-};
+import { Ride } from '../../types/ride.types';
 
 export function SearchResultsScreen() {
   const navigation = useNavigation<any>();

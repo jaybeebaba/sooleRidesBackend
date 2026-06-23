@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-
 import type { SearchRidesParams } from '../api/rides.api';
 
 type RideSearchState = {

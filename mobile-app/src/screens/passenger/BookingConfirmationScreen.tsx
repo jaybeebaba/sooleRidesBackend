@@ -20,22 +20,16 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { Ride } from '../../types/ride.types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BookingConfirmation'>;
 
-type RideDetails = {
-  id: string;
-  origin: string;
-  destination: string;
-  departureTime: string;
-  pricePerSeat: number;
-  availableSeats: number;
-};
+
 
 export function BookingConfirmationScreen({ navigation, route }: Props) {
   const { rideId } = route.params;
 
-  const [ride, setRide] = useState<RideDetails | null>(null);
+  const [ride, setRide] = useState<Ride | null>(null);
   const [seatsBooked, setSeatsBooked] = useState('1');
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);

@@ -20,3 +20,8 @@ export async function getRideById(rideId: string) {
 
   return response.data;
 }
+
+export async function getPopularRoutes() {
+  const response = await api.get('/rides/popular-routes');
+  return response.data;
+}

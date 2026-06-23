@@ -12,7 +12,7 @@ import { UpdateRideDto } from './dto/update-ride.dto';
 
 @Injectable()
 export class RidesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private async getApprovedDriverProfile(userId: string) {
     const driverProfile = await this.prisma.driverProfile.findUnique({
@@ -84,12 +84,12 @@ export class RidesService {
         status: RideStatus.PUBLISHED,
         stops: dto.stops?.length
           ? {
-              create: dto.stops.map((stop) => ({
-                city: stop.city.trim(),
-                address: stop.address?.trim(),
-                stopOrder: stop.stopOrder,
-              })),
-            }
+            create: dto.stops.map((stop) => ({
+              city: stop.city.trim(),
+              address: stop.address?.trim(),
+              stopOrder: stop.stopOrder,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -336,5 +336,35 @@ export class RidesService {
       message: 'Ride cancelled successfully',
       ride: updatedRide,
     };
+  }
+
+  async getPopularRoutes() {
+    const routes = await this.prisma.ride.groupBy({
+      by: ['origin', 'destination'],
+      where: {
+        status: {
+          in: [RideStatus.PUBLISHED, RideStatus.COMPLETED],
+        },
+      },
+      _count: {
+        id: true,
+      },
+      _avg: {
+        pricePerSeat: true,
+      },
+      orderBy: {
+        _count: {
+          id: 'desc',
+        },
+      },
+      take: 6,
+    });
+
+    return routes.map((route) => ({
+      origin: route.origin,
+      destination: route.destination,
+      rideCount: route._count.id,
+      averagePrice: Math.round(route._avg.pricePerSeat || 0),
+    }));
   }
 }

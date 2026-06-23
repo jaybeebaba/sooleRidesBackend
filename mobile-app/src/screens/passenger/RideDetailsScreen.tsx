@@ -19,35 +19,16 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { Ride } from '../../types/ride.types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RideDetails'>;
 
-type RideDetails = {
-  id: string;
-  origin: string;
-  destination: string;
-  departureTime: string;
-  estimatedArrivalTime?: string;
-  pricePerSeat: number;
-  availableSeats: number;
-  totalSeats: number;
-  driver?: {
-    id: string;
-    fullName?: string;
-    phone?: string;
-  };
-  vehicle?: {
-    brand?: string;
-    model?: string;
-    color?: string;
-    plateNumber?: string;
-  };
-};
+
 
 export function RideDetailsScreen({ navigation, route }: Props) {
   const { rideId, bookingId, bookingStatus, totalAmount, review } = route.params;
 
-  const [ride, setRide] = useState<RideDetails | null>(null);
+  const [ride, setRide] = useState<Ride | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isFromMyTrips = Boolean(bookingId);

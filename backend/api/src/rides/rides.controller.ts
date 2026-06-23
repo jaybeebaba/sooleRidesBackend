@@ -21,7 +21,7 @@ import { UpdateRideDto } from './dto/update-ride.dto';
 
 @Controller('rides')
 export class RidesController {
-  constructor(private readonly ridesService: RidesService) {}
+  constructor(private readonly ridesService: RidesService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, FullyVerifiedGuard)
@@ -38,6 +38,11 @@ export class RidesController {
   @Get('search')
   search(@Query() dto: SearchRidesDto) {
     return this.ridesService.search(dto);
+  }
+
+  @Get('popular-routes')
+  getPopularRoutes() {
+    return this.ridesService.getPopularRoutes();
   }
 
   @Get(':id')

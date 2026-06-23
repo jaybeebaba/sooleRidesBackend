@@ -20,6 +20,8 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { Booking } from '../../types/booking.types';
+import { PopularRoute } from '../../types/ride.types';
+import { getPopularRoutes } from '../../api/rides.api';
 
 export function PassengerHomeScreen() {
   const navigation = useNavigation<any>();
@@ -32,6 +34,7 @@ export function PassengerHomeScreen() {
   const [date, setDate] = useState('');
   const [seats, setSeats] = useState('1');
   const [recentCompletedRides, setRecentCompletedRides] = useState<Booking[]>([]);
+  const [popularRoutes, setPopularRoutes] = useState<PopularRoute[]>([]);
 
   const isFullyVerified = Boolean(
     user?.isEmailVerified &&
@@ -54,9 +57,20 @@ export function PassengerHomeScreen() {
     }
   };
 
+  const fetchPopularRoutes = async () => {
+  try {
+    const data = await getPopularRoutes();
+    console.log('POPULAR ROUTES:', data);
+    setPopularRoutes(data);
+  } catch (error) {
+    console.log('POPULAR ROUTES ERROR:', error);
+  }
+};
+
   useFocusEffect(
     useCallback(() => {
       fetchRecentCompletedRides();
+      fetchPopularRoutes()
     }, []),
   );
 
@@ -234,15 +248,29 @@ export function PassengerHomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {['Lagos to Abuja', 'Lagos to Ibadan', 'Abuja to Kaduna'].map(
-            (route) => (
-              <View key={route} style={styles.routeCard}>
-                <Text style={styles.routeTitle}>{route}</Text>
-                <Text style={styles.routePrice}>From ₦7,000</Text>
-              </View>
-            ),
-          )}
-        </ScrollView>
+  {popularRoutes.map((route) => (
+    <TouchableOpacity
+      key={`${route.origin}-${route.destination}`}
+      style={styles.routeCard}
+      onPress={() => {
+        setOrigin(route.origin);
+        setDestination(route.destination);
+      }}
+    >
+      <Text style={styles.routeTitle}>
+        {route.origin} → {route.destination}
+      </Text>
+
+      <Text style={styles.routePrice}>
+        From ₦{route.averagePrice.toLocaleString()}
+      </Text>
+
+      <Text style={styles.routeTrips}>
+        {route.rideCount} completed trips
+      </Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Completed Rides</Text>
@@ -470,6 +498,11 @@ const styles = StyleSheet.create({
     color: colors.lightGray,
     marginTop: spacing.xs,
   },
+  routeTrips: {
+  fontSize: 12,
+  color: colors.gray,
+  marginTop: spacing.xs,
+},
   rideCard: {
     backgroundColor: colors.lightGray,
     borderRadius: 14,
