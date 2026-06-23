@@ -87,6 +87,7 @@ export type RootStackParamList = {
   };
   
   EmergencyContacts: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

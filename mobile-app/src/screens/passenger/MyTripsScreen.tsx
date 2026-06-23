@@ -11,6 +11,7 @@ import {
   Alert
 } from 'react-native';
 
+import { EmptyState } from '../../components/shared/EmptyState';
 import { getMyBookings, cancelBooking } from '../../api/bookings.api';
 import { AppScreen } from '../../components/layout/AppScreen';
 import { colors } from '../../theme/colors';
@@ -92,15 +93,11 @@ export function MyTripsScreen() {
         )}
 
         {!loading && bookings.length === 0 && (
-          <View style={styles.emptyCard}>
-            <FontAwesome name="car" size={28} color={colors.gray} />
-
-            <Text style={styles.emptyTitle}>No trips yet</Text>
-
-            <Text style={styles.emptyText}>
-              Your booked rides will appear here.
-            </Text>
-          </View>
+          <EmptyState
+            icon="car"
+            title="No trips yet"
+            message="Your booked rides will appear here."
+          />
         )}
 
         {!loading &&
@@ -184,23 +181,6 @@ const styles = StyleSheet.create({
   },
   center: {
     marginTop: spacing.xl,
-  },
-  emptyCard: {
-    backgroundColor: colors.lightGray,
-    borderRadius: 16,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    ...typography.caption,
-    color: colors.black,
-    marginTop: spacing.md,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.gray,
-    textAlign: 'center',
-    marginTop: spacing.xs,
   },
   tripCard: {
     backgroundColor: colors.lightGray,

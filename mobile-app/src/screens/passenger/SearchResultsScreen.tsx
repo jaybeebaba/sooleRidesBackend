@@ -119,9 +119,6 @@ export function SearchResultsScreen() {
             <FontAwesome name="chevron-left" size={16} color={colors.white} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.notificationButton}>
-            <FontAwesome name="bell-o" size={20} color={colors.black} />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.searchCard}>
@@ -295,15 +292,6 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     backgroundColor: colors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notificationButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },

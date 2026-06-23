@@ -23,6 +23,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { EmptyState } from '../../components/shared/EmptyState';
 
 export function EmergencyContactsScreen() {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
@@ -171,13 +172,11 @@ export function EmergencyContactsScreen() {
         )}
 
         {!loading && contacts.length === 0 && (
-          <View style={styles.emptyCard}>
-            <FontAwesome name="phone" size={28} color={colors.gray} />
-            <Text style={styles.emptyTitle}>No emergency contacts yet</Text>
-            <Text style={styles.emptyText}>
-              Add trusted people we can contact during emergencies.
-            </Text>
-          </View>
+          <EmptyState
+            icon="phone"
+            title="No emergency contacts yet"
+            message="Add trusted people we can contact during emergencies."
+          />
         )}
 
         {!loading &&
@@ -256,23 +255,6 @@ const styles = StyleSheet.create({
   },
   center: {
     marginTop: spacing.xl,
-  },
-  emptyCard: {
-    backgroundColor: colors.lightGray,
-    borderRadius: 16,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    ...typography.caption,
-    color: colors.black,
-    marginTop: spacing.md,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.gray,
-    textAlign: 'center',
-    marginTop: spacing.xs,
   },
   contactCard: {
     backgroundColor: colors.lightGray,

@@ -1,4 +1,6 @@
-import { FontAwesome } from '@expo/vector-icons';
+import { EmptyState } from '../../components/shared/EmptyState';
+import { HomeHeader } from '../../components/shared/HomeHeader';
+import { VerificationCard } from '../../components/shared/VerificationCard';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
@@ -23,12 +25,14 @@ import { Booking } from '../../types/booking.types';
 import { PopularRoute } from '../../types/ride.types';
 import { getPopularRoutes } from '../../api/rides.api';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
+import { FontAwesome } from '@expo/vector-icons';
+import { NotificationsModal } from '../../components/shared/NotificationsModal';
 
 export function PassengerHomeScreen() {
   const navigation = useNavigation<any>();
   const currentLocation = useCurrentLocation();
 
-  
+
 
   const user = useAuthStore((state) => state.user);
   const setSearchParams = useRideSearchStore((state) => state.setSearchParams);
@@ -39,12 +43,13 @@ export function PassengerHomeScreen() {
   const [seats, setSeats] = useState('1');
   const [recentCompletedRides, setRecentCompletedRides] = useState<Booking[]>([]);
   const [popularRoutes, setPopularRoutes] = useState<PopularRoute[]>([]);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
 
   const isFullyVerified = Boolean(
     user?.isEmailVerified &&
-      user?.isPhoneVerified &&
-      user?.isIdentityVerified &&
-      user?.isFaceVerified,
+    user?.isPhoneVerified &&
+    user?.isIdentityVerified &&
+    user?.isFaceVerified,
   );
 
   const fetchRecentCompletedRides = async () => {
@@ -62,13 +67,13 @@ export function PassengerHomeScreen() {
   };
 
   const fetchPopularRoutes = async () => {
-  try {
-    const data = await getPopularRoutes();
-    setPopularRoutes(data);
-  } catch (error) {
-    console.log('POPULAR ROUTES ERROR:', error);
-  }
-};
+    try {
+      const data = await getPopularRoutes();
+      setPopularRoutes(data);
+    } catch (error) {
+      console.log('POPULAR ROUTES ERROR:', error);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -115,42 +120,23 @@ export function PassengerHomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <FontAwesome name="user" size={22} color={colors.white} />
-          </View>
+        <HomeHeader
+  fullName={user?.fullName}
+  imageUrl={undefined}
+  location={currentLocation}
+  notificationCount={0}
+  onNotificationPress={() => setNotificationsVisible(true)}
+/>
 
-          <View style={styles.headerText}>
-            <Text style={styles.greeting}>
-              Hi, {user?.fullName?.split(' ')[0] || 'Passenger'}
-            </Text>
+<NotificationsModal
+  visible={notificationsVisible}
+  onClose={() => setNotificationsVisible(false)}
+/>
 
-            <View style={styles.locationRow}>
-              <FontAwesome name="map-marker" size={14} color={colors.gray} />
-              <Text style={styles.location}>{currentLocation}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.notificationButton}>
-            <FontAwesome name="bell-o" size={20} color={colors.black} />
-          </TouchableOpacity>
-        </View>
-
-        {!isFullyVerified && (
-          <View style={styles.verificationCard}>
-            <Text style={styles.verificationTitle}>Complete your verification</Text>
-
-            <Text style={styles.verificationText}>
-              Verify your phone number and identity to unlock bookings,
-              messaging, payments, and driver application later.
-            </Text>
-
-            <AppButton
-              title="Verify Now"
-              onPress={() => navigation.navigate('Verification')}
-            />
-          </View>
-        )}
+        <VerificationCard
+          visible={!isFullyVerified}
+          onPress={() => navigation.navigate('Verification')}
+        />
 
         <View style={styles.searchCard}>
           <View style={styles.searchRow}>
@@ -251,26 +237,26 @@ export function PassengerHomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-  {popularRoutes.map((route) => (
-    <TouchableOpacity
-      key={`${route.origin}-${route.destination}`}
-      style={styles.routeCard}
-      onPress={() => {
-        setOrigin(route.origin);
-        setDestination(route.destination);
-      }}
-    >
-      <Text style={styles.routeTitle}>
-        {route.origin} → {route.destination}
-      </Text>
+          {popularRoutes.map((route) => (
+            <TouchableOpacity
+              key={`${route.origin}-${route.destination}`}
+              style={styles.routeCard}
+              onPress={() => {
+                setOrigin(route.origin);
+                setDestination(route.destination);
+              }}
+            >
+              <Text style={styles.routeTitle}>
+                {route.origin} → {route.destination}
+              </Text>
 
-      <Text style={styles.routePrice}>
-        From ₦{route.averagePrice.toLocaleString()}
-      </Text>
+              <Text style={styles.routePrice}>
+                From ₦{route.averagePrice.toLocaleString()}
+              </Text>
 
-    </TouchableOpacity>
-  ))}
-</ScrollView>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Completed Rides</Text>
@@ -287,12 +273,11 @@ export function PassengerHomeScreen() {
         </View>
 
         {recentCompletedRides.length === 0 ? (
-          <View style={styles.rideCard}>
-            <Text style={styles.rideTitle}>No completed rides yet</Text>
-            <Text style={styles.rideMeta}>
-              Your completed trips will appear here.
-            </Text>
-          </View>
+          <EmptyState
+            icon="car"
+            title="No completed rides yet"
+            message="Your completed trips will appear here."
+          />
         ) : (
           recentCompletedRides.map((booking) => (
             <TouchableOpacity
@@ -339,62 +324,6 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     paddingBottom: spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  greeting: {
-    ...typography.caption,
-    color: colors.black,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  location: {
-    ...typography.body,
-    color: colors.gray,
-    marginLeft: spacing.xs,
-  },
-  notificationButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verificationCard: {
-    backgroundColor: colors.lightGray,
-    borderRadius: 16,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  verificationTitle: {
-    ...typography.caption,
-    color: colors.black,
-    marginBottom: spacing.xs,
-  },
-  verificationText: {
-    ...typography.body,
-    color: colors.gray,
-    marginBottom: spacing.md,
   },
   searchCard: {
     backgroundColor: colors.lightGray,
@@ -499,10 +428,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   routeTrips: {
-  fontSize: 12,
-  color: colors.gray,
-  marginTop: spacing.xs,
-},
+    fontSize: 12,
+    color: colors.gray,
+    marginTop: spacing.xs,
+  },
   rideCard: {
     backgroundColor: colors.lightGray,
     borderRadius: 14,

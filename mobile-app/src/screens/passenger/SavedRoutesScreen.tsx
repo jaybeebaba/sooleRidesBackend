@@ -24,6 +24,7 @@ import { useRideSearchStore } from '../../store/rideSearch.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { EmptyState } from '../../components/shared/EmptyState';
 
 export function SavedRoutesScreen() {
   const navigation = useNavigation<any>();
@@ -171,13 +172,11 @@ export function SavedRoutesScreen() {
         )}
 
         {!loading && routes.length === 0 && (
-          <View style={styles.emptyCard}>
-            <FontAwesome name="bookmark" size={28} color={colors.gray} />
-            <Text style={styles.emptyTitle}>No saved routes yet</Text>
-            <Text style={styles.emptyText}>
-              Save routes you frequently travel so you can search faster.
-            </Text>
-          </View>
+          <EmptyState
+            icon="bookmark"
+            title="No saved routes yet"
+            message="Save routes you frequently travel so you can search faster."
+          />
         )}
 
         {!loading &&
@@ -265,23 +264,7 @@ const styles = StyleSheet.create({
   center: {
     marginTop: spacing.xl,
   },
-  emptyCard: {
-    backgroundColor: colors.lightGray,
-    borderRadius: 16,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    ...typography.caption,
-    color: colors.black,
-    marginTop: spacing.md,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.gray,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
+
   routeCard: {
     backgroundColor: colors.lightGray,
     borderRadius: 14,
