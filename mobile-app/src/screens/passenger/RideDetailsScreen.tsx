@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { cancelBooking } from '../../api/bookings.api';
 import { getRideById } from '../../api/rides.api';
 import { AppScreen } from '../../components/layout/AppScreen';
 import { AppButton } from '../../components/ui/AppButton';
@@ -18,7 +19,6 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { cancelBooking } from '../../api/bookings.api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RideDetails'>;
 
@@ -32,6 +32,7 @@ type RideDetails = {
   availableSeats: number;
   totalSeats: number;
   driver?: {
+    id: string;
     fullName?: string;
     phone?: string;
   };
@@ -44,45 +45,22 @@ type RideDetails = {
 };
 
 export function RideDetailsScreen({ navigation, route }: Props) {
- 
+  const { rideId, bookingId, bookingStatus, totalAmount, review } = route.params;
+
   const [ride, setRide] = useState<RideDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { rideId, bookingId, bookingStatus, totalAmount } = route.params;
-
   const isFromMyTrips = Boolean(bookingId);
+  const isCompleted = bookingStatus === 'COMPLETED';
+
+  const isCancelled =
+    bookingStatus === 'PASSENGER_CANCELLED' ||
+    bookingStatus === 'DRIVER_CANCELLED';
+
   const canPay = bookingStatus === 'PAYMENT_PENDING';
-  const canCancel =
-    bookingStatus !== 'COMPLETED' &&
-    bookingStatus !== 'PASSENGER_CANCELLED' &&
-    bookingStatus !== 'DRIVER_CANCELLED';
+  const canCancel = Boolean(bookingId) && !isCompleted && !isCancelled;
+  const canReview = isCompleted && !review;
 
-
-    const handleCancelBooking = async () => {
-  if (!bookingId) return;
-
-  try {
-    await cancelBooking(bookingId);
-
-    Alert.alert(
-      'Booking Cancelled',
-      'Your booking has been cancelled successfully.',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ],
-    );
-  } catch (error) {
-    console.log('CANCEL BOOKING ERROR:', error);
-
-    Alert.alert(
-      'Cancellation Failed',
-      'Could not cancel booking. Please try again.',
-    );
-  }
-};
   useEffect(() => {
     const fetchRide = async () => {
       try {
@@ -98,6 +76,44 @@ export function RideDetailsScreen({ navigation, route }: Props) {
 
     fetchRide();
   }, [rideId]);
+
+  const handleCancelBooking = async () => {
+    if (!bookingId) return;
+
+    try {
+      await cancelBooking(bookingId);
+
+      Alert.alert(
+        'Booking Cancelled',
+        'Your booking has been cancelled successfully.',
+        [
+          {
+            text: 'OK',
+            onPress: () =>
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Home',
+                    params: {
+                      screen: 'TripsTab',
+                    },
+                  },
+                ],
+              }),
+          },
+        ],
+      );
+    } catch (error: any) {
+      console.log('CANCEL BOOKING ERROR:', error?.response?.data || error);
+
+      Alert.alert(
+        'Cancellation Failed',
+        error?.response?.data?.message ||
+          'Could not cancel booking. Please try again.',
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -144,7 +160,17 @@ export function RideDetailsScreen({ navigation, route }: Props) {
           <FontAwesome name="chevron-left" size={16} color={colors.white} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Ride Details</Text>
+        <Text style={styles.title}>
+          {isCompleted ? 'Completed Trip' : 'Ride Details'}
+        </Text>
+
+        {isFromMyTrips && bookingStatus && (
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>
+              Status: {bookingStatus.replaceAll('_', ' ')}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.rideCard}>
           <View style={styles.driverAvatar}>
@@ -212,58 +238,137 @@ export function RideDetailsScreen({ navigation, route }: Props) {
             <Text style={styles.summaryLabel}>Price Per Seat</Text>
             <Text style={styles.amount}>₦{ride.pricePerSeat}</Text>
           </View>
+
+          {isFromMyTrips && totalAmount !== undefined && (
+            <>
+              <View style={styles.divider} />
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Booking Amount</Text>
+                <Text style={styles.amount}>₦{totalAmount}</Text>
+              </View>
+            </>
+          )}
         </View>
 
-        <View style={styles.buttonWrapper}>
+        <View style={styles.actionContainer}>
           {isFromMyTrips ? (
-  <View>
-    {canPay && (
-      <AppButton
-        title="Pay Now"
-        onPress={() =>
-          navigation.navigate('Payment', {
-            bookingId: bookingId!,
-            amount: totalAmount || 0,
-          })
-        }
-      />
-    )}
+            <>
+              {isCompleted && (
+                <>
+                  {canReview && (
+                    <AppButton
+                      title="Leave Review"
+                      onPress={() => {
+                        if (!bookingId || !ride.driver?.id) {
+                          Alert.alert(
+                            'Review unavailable',
+                            'Could not find review details.',
+                          );
+                          return;
+                        }
 
-    {canCancel && (
-      <TouchableOpacity
-  style={styles.cancelButton}
-  onPress={() => {
-    Alert.alert(
-      'Cancel Booking',
-      'Are you sure you want to cancel this booking?',
-      [
-        {
-          text: 'No',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: handleCancelBooking,
-        },
-      ],
-    );
-  }}
->
-  <Text style={styles.cancelText}>Cancel Booking</Text>
-</TouchableOpacity>
-    )}
-  </View>
-) : (
-  <AppButton
-    title="Book Ride"
-    onPress={() =>
-      navigation.navigate('BookingConfirmation', {
-        rideId: ride.id,
-      })
-    }
-  />
-)}
+                        navigation.navigate('LeaveReview', {
+                          bookingId,
+                          revieweeId: ride.driver.id,
+                          revieweeName: ride.driver.fullName || 'Driver',
+                        });
+                      }}
+                    />
+                  )}
+
+                  {review && (
+                    <View style={styles.reviewCard}>
+                      <Text style={styles.reviewTitle}>Your Review</Text>
+
+                      <View style={styles.starsRow}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <FontAwesome
+                            key={star}
+                            name={star <= review.rating ? 'star' : 'star-o'}
+                            size={18}
+                            color={colors.primary}
+                          />
+                        ))}
+                      </View>
+
+                      <Text style={styles.reviewComment}>
+                        {review.comment || 'No comment provided.'}
+                      </Text>
+
+                      <Text style={styles.reviewDate}>
+                        Reviewed on{' '}
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  )}
+
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() =>
+                      Alert.alert('Coming Soon', 'Reports will be added later.')
+                    }
+                  >
+                    <Text style={styles.secondaryButtonText}>Report Issue</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {!isCompleted && canPay && bookingId && (
+                <View style={styles.actionSpacing}>
+                  <AppButton
+                    title="Pay Now"
+                    onPress={() =>
+                      navigation.navigate('Payment', {
+                        bookingId,
+                        amount: totalAmount || 0,
+                      })
+                    }
+                  />
+                </View>
+              )}
+
+              {!isCompleted && canCancel && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    Alert.alert(
+                      'Cancel Booking',
+                      'This action cannot be undone. Are you sure you want to cancel this booking?',
+                      [
+                        {
+                          text: 'Keep Booking',
+                          style: 'cancel',
+                        },
+                        {
+                          text: 'Cancel Booking',
+                          style: 'destructive',
+                          onPress: handleCancelBooking,
+                        },
+                      ],
+                    );
+                  }}
+                >
+                  <Text style={styles.cancelText}>Cancel Booking</Text>
+                </TouchableOpacity>
+              )}
+
+              {isCancelled && (
+                <Text style={styles.infoText}>
+                  This booking has been cancelled.
+                </Text>
+              )}
+            </>
+          ) : (
+            <AppButton
+              title="Book Ride"
+              onPress={() =>
+                navigation.navigate('BookingConfirmation', {
+                  rideId: ride.id,
+                })
+              }
+            />
+          )}
         </View>
       </ScrollView>
     </AppScreen>
@@ -297,6 +402,19 @@ const styles = StyleSheet.create({
     color: colors.black,
     textAlign: 'center',
     marginBottom: spacing.lg,
+  },
+  statusBadge: {
+    alignSelf: 'center',
+    backgroundColor: colors.black,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 10,
+    marginBottom: spacing.md,
+  },
+  statusText: {
+    ...typography.caption,
+    color: colors.white,
+    textTransform: 'capitalize',
   },
   rideCard: {
     backgroundColor: colors.lightGray,
@@ -381,47 +499,69 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.primary,
   },
-  buttonWrapper: {
+  actionContainer: {
     marginTop: spacing.lg,
+  },
+  actionSpacing: {
+    marginBottom: spacing.md,
+  },
+  cancelButton: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  cancelText: {
+    ...typography.caption,
+    color: colors.danger,
+  },
+  secondaryButton: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    ...typography.caption,
+    color: colors.black,
+  },
+  reviewCard: {
+    backgroundColor: colors.lightGray,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  reviewTitle: {
+    ...typography.caption,
+    color: colors.black,
+    marginBottom: spacing.sm,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  reviewComment: {
+    ...typography.body,
+    color: colors.black,
+  },
+  reviewDate: {
+    ...typography.body,
+    color: colors.gray,
+    marginTop: spacing.sm,
+  },
+  infoText: {
+    ...typography.body,
+    color: colors.gray,
+    textAlign: 'center',
+    marginTop: spacing.md,
   },
   emptyText: {
     ...typography.body,
     color: colors.gray,
   },
-
-  cancelButton: {
-  marginTop: spacing.md,
-  borderWidth: 1,
-  borderColor: colors.danger,
-  borderRadius: 12,
-  paddingVertical: spacing.md,
-  alignItems: 'center',
-},
-
-cancelText: {
-  ...typography.caption,
-  color: colors.danger,
-},
-
-actionContainer: {
-  marginTop: spacing.lg,
-},
-
-actionSpacing: {
-  marginBottom: spacing.md,
-},
-
-statusBadge: {
-  alignSelf: 'flex-start',
-  backgroundColor: colors.lightGray,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: 8,
-  marginTop: spacing.sm,
-},
-
-statusText: {
-  ...typography.body,
-  color: colors.black,
-},
 });

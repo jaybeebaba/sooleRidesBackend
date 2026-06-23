@@ -16,19 +16,9 @@ import { AppScreen } from '../../components/layout/AppScreen';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { Booking } from '../../types/booking.types';
 
-type Booking = {
-  id: string;
-  status: string;
-  seatsBooked: number;
-  totalAmount: number;
-  ride?: {
-    id: string;
-    origin: string;
-    destination: string;
-    departureTime: string;
-  };
-};
+
 
 export function MyTripsScreen() {
   const navigation = useNavigation<any>();
@@ -51,34 +41,34 @@ export function MyTripsScreen() {
   };
 
   const handleCancelBooking = (bookingId: string) => {
-  Alert.alert(
-    'Cancel Booking',
-    'This action cannot be undone. Are you sure you want to cancel this booking?',
-    [
-      {
-        text: 'Keep Booking',
-        style: 'cancel',
-      },
-      {
-        text: 'Cancel Booking',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await cancelBooking(bookingId);
-            await fetchBookings();
-          } catch (error) {
-            console.log('CANCEL BOOKING ERROR:', error);
-
-            Alert.alert(
-              'Cancellation Failed',
-              'Could not cancel booking. Please try again.',
-            );
-          }
+    Alert.alert(
+      'Cancel Booking',
+      'This action cannot be undone. Are you sure you want to cancel this booking?',
+      [
+        {
+          text: 'Keep Booking',
+          style: 'cancel',
         },
-      },
-    ],
-  );
-};
+        {
+          text: 'Cancel Booking',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelBooking(bookingId);
+              await fetchBookings();
+            } catch (error) {
+              console.log('CANCEL BOOKING ERROR:', error);
+
+              Alert.alert(
+                'Cancellation Failed',
+                'Could not cancel booking. Please try again.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -126,6 +116,7 @@ export function MyTripsScreen() {
                     bookingId: booking.id,
                     bookingStatus: booking.status,
                     totalAmount: booking.totalAmount,
+                    review: booking.review,
                   });
                 }
               }}

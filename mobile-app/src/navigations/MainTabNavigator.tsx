@@ -11,9 +11,11 @@ import { colors } from '../theme/colors';
 export type MainTabParamList = {
   HomeTab: undefined;
   SearchTab: undefined;
-  TripsTab: undefined;
   SavedTab: undefined;
   ProfileTab: undefined;
+  TripsTab: {
+  statusFilter?: 'COMPLETED';
+} | undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();

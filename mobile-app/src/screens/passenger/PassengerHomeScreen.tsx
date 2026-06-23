@@ -1,6 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -11,33 +11,53 @@ import {
   View,
 } from 'react-native';
 
+import { getMyBookings } from '../../api/bookings.api';
 import { AppScreen } from '../../components/layout/AppScreen';
 import { AppButton } from '../../components/ui/AppButton';
 import { useAuthStore } from '../../store/auth.store';
+import { useRideSearchStore } from '../../store/rideSearch.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { useRideSearchStore } from '../../store/rideSearch.store';
+import { Booking } from '../../types/booking.types';
 
 export function PassengerHomeScreen() {
   const navigation = useNavigation<any>();
+
   const user = useAuthStore((state) => state.user);
   const setSearchParams = useRideSearchStore((state) => state.setSearchParams);
-  
-
- 
 
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [date, setDate] = useState('');
   const [seats, setSeats] = useState('1');
-
+  const [recentCompletedRides, setRecentCompletedRides] = useState<Booking[]>([]);
 
   const isFullyVerified = Boolean(
     user?.isEmailVerified &&
-    user?.isPhoneVerified &&
-    user?.isIdentityVerified &&
-    user?.isFaceVerified,
+      user?.isPhoneVerified &&
+      user?.isIdentityVerified &&
+      user?.isFaceVerified,
+  );
+
+  const fetchRecentCompletedRides = async () => {
+    try {
+      const data = await getMyBookings();
+
+      const completed = data
+        .filter((booking: Booking) => booking.status === 'COMPLETED')
+        .slice(0, 4);
+
+      setRecentCompletedRides(completed);
+    } catch (error: any) {
+      console.log('RECENT COMPLETED RIDES ERROR:', error?.response?.data || error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecentCompletedRides();
+    }, []),
   );
 
   const handleSwapLocations = () => {
@@ -46,30 +66,30 @@ export function PassengerHomeScreen() {
   };
 
   const handleSearch = () => {
-  const cleanOrigin = origin.trim();
-  const cleanDestination = destination.trim();
-  const cleanDate = date.trim();
-  const cleanSeats = seats.trim();
+    const cleanOrigin = origin.trim();
+    const cleanDestination = destination.trim();
+    const cleanDate = date.trim();
+    const cleanSeats = seats.trim();
 
-  if (!cleanOrigin || !cleanDestination) {
-    Alert.alert('Missing route', 'Please enter both departure and destination.');
-    return;
-  }
+    if (!cleanOrigin || !cleanDestination) {
+      Alert.alert('Missing route', 'Please enter both departure and destination.');
+      return;
+    }
 
-  if (cleanSeats && Number(cleanSeats) < 1) {
-    Alert.alert('Invalid seats', 'Seats must be at least 1.');
-    return;
-  }
+    if (cleanSeats && Number(cleanSeats) < 1) {
+      Alert.alert('Invalid seats', 'Seats must be at least 1.');
+      return;
+    }
 
-  setSearchParams({
-    origin: cleanOrigin,
-    destination: cleanDestination,
-    date: cleanDate || undefined,
-    seats: cleanSeats ? Number(cleanSeats) : undefined,
-  });
+    setSearchParams({
+      origin: cleanOrigin,
+      destination: cleanDestination,
+      date: cleanDate || undefined,
+      seats: cleanSeats ? Number(cleanSeats) : undefined,
+    });
 
-  navigation.navigate('SearchTab');
-};
+    navigation.navigate('SearchTab');
+  };
 
   return (
     <AppScreen>
@@ -110,7 +130,7 @@ export function PassengerHomeScreen() {
 
             <AppButton
               title="Verify Now"
-              onPress={() => navigation.navigate('PhoneVerification')}
+              onPress={() => navigation.navigate('Verification')}
             />
           </View>
         )}
@@ -151,33 +171,31 @@ export function PassengerHomeScreen() {
           <View style={styles.divider} />
 
           <View style={styles.searchRow}>
-  <View style={styles.compactField}>
-    <Text style={styles.fieldLabel}>Date</Text>
+            <View style={styles.compactField}>
+              <Text style={styles.fieldLabel}>Date</Text>
+              <TextInput
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.gray}
+                value={date}
+                onChangeText={setDate}
+                style={styles.fieldInput}
+              />
+            </View>
 
-    <TextInput
-      placeholder="YYYY-MM-DD"
-      placeholderTextColor={colors.gray}
-      value={date}
-      onChangeText={setDate}
-      style={styles.fieldInput}
-    />
-  </View>
+            <View style={styles.verticalDivider} />
 
-  <View style={styles.verticalDivider} />
-
-  <View style={styles.compactField}>
-    <Text style={styles.fieldLabel}>Seats</Text>
-
-    <TextInput
-      placeholder="1"
-      placeholderTextColor={colors.gray}
-      value={seats}
-      onChangeText={setSeats}
-      keyboardType="number-pad"
-      style={styles.fieldInput}
-    />
-  </View>
-</View>
+            <View style={styles.compactField}>
+              <Text style={styles.fieldLabel}>Seats</Text>
+              <TextInput
+                placeholder="1"
+                placeholderTextColor={colors.gray}
+                value={seats}
+                onChangeText={setSeats}
+                keyboardType="number-pad"
+                style={styles.fieldInput}
+              />
+            </View>
+          </View>
 
           <View style={styles.searchButton}>
             <AppButton title="Search Rides" onPress={handleSearch} />
@@ -227,21 +245,60 @@ export function PassengerHomeScreen() {
         </ScrollView>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Rides</Text>
-          <Text style={styles.viewAll}>View all</Text>
+          <Text style={styles.sectionTitle}>Recent Completed Rides</Text>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('TripsTab', {
+                statusFilter: 'COMPLETED',
+              })
+            }
+          >
+            <Text style={styles.viewAll}>View all</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.rideCard}>
-          <Text style={styles.rideTitle}>Lagos → Abuja</Text>
-          <Text style={styles.rideMeta}>Sun, 26 May • 08:00 AM</Text>
-          <Text style={styles.rideMeta}>3 seats available • From ₦7,000</Text>
-        </View>
+        {recentCompletedRides.length === 0 ? (
+          <View style={styles.rideCard}>
+            <Text style={styles.rideTitle}>No completed rides yet</Text>
+            <Text style={styles.rideMeta}>
+              Your completed trips will appear here.
+            </Text>
+          </View>
+        ) : (
+          recentCompletedRides.map((booking) => (
+            <TouchableOpacity
+              key={booking.id}
+              style={styles.rideCard}
+              activeOpacity={0.85}
+              onPress={() => {
+                if (booking.ride?.id) {
+                  navigation.navigate('RideDetails', {
+                    rideId: booking.ride.id,
+                    bookingId: booking.id,
+                    bookingStatus: booking.status,
+                    totalAmount: booking.totalAmount,
+                  });
+                }
+              }}
+            >
+              <Text style={styles.rideTitle}>
+                {booking.ride?.origin || 'Origin'} →{' '}
+                {booking.ride?.destination || 'Destination'}
+              </Text>
 
-        <View style={styles.rideCard}>
-          <Text style={styles.rideTitle}>Ibadan → Lagos</Text>
-          <Text style={styles.rideMeta}>Mon, 27 May • 10:30 AM</Text>
-          <Text style={styles.rideMeta}>2 seats available • From ₦3,500</Text>
-        </View>
+              <Text style={styles.rideMeta}>
+                {booking.ride?.departureTime
+                  ? new Date(booking.ride.departureTime).toLocaleString()
+                  : 'Date unavailable'}
+              </Text>
+
+              <Text style={styles.rideMeta}>
+                {booking.seatsBooked} seat(s) • ₦{booking.totalAmount}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </AppScreen>
   );
@@ -315,7 +372,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
     borderRadius: 20,
     padding: spacing.md,
-    marginBottom: spacing.lg
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchRow: {
     flexDirection: 'row',
@@ -333,12 +392,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.black,
     paddingVertical: 2,
-    minHeight: 32,
-  },
-  fieldInputText: {
-    ...typography.body,
-    color: colors.black,
-    paddingVertical: 8,
     minHeight: 32,
   },
   swapButton: {
@@ -391,6 +444,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+    marginTop: spacing.md,
   },
   sectionTitle: {
     ...typography.caption,

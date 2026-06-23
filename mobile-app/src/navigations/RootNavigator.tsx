@@ -1,6 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
 // import { HomeScreen } from '../screens/shared/HomeScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
@@ -17,6 +16,9 @@ import { RideDetailsScreen } from '../screens/passenger/RideDetailsScreen';
 import { BookingConfirmationScreen } from '../screens/passenger/BookingConfirmationScreen';
 import { EmergencyContactsScreen } from '../screens/passenger/EmergencyContactsScreen';
 import { PaymentScreen } from '../screens/passenger/PaymentScreen';
+import { PersonalInformationScreen } from '../screens/shared/PersonalInformationScreen';
+import { VerificationScreen } from '../screens/verification/VerificationScreen';
+import {LeaveReviewScreen } from "../screens/passenger/LeaveReviewScreen"
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -58,17 +60,32 @@ export type RootStackParamList = {
   bookingId?: string;
   bookingStatus?: string;
   totalAmount?: number;
+
+  review?: {
+    id: string;
+    rating: number;
+    comment?: string;
+    createdAt: string;
+  } | null;
 };
 
   Payment: {
     bookingId: string;
     amount: number;
   };
+  
 
   BookingConfirmation: {
     rideId: string;
   };
-
+  PersonalInformation: undefined;
+  Verification: undefined;
+  LeaveReview: {
+    bookingId: string;
+    revieweeId: string;
+    revieweeName?: string;
+  };
+  
   EmergencyContacts: undefined;
 };
 
@@ -103,6 +120,17 @@ export function RootNavigator() {
           component={PaymentScreen}
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="PersonalInformation"
+          component={PersonalInformationScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Verification"
+          component={VerificationScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="LeaveReview" component={LeaveReviewScreen} options={{headerShown: false}} />
       </Stack.Navigator>
     </NavigationContainer>
   );
