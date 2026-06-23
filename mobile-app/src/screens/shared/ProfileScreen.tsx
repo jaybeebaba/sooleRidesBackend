@@ -261,8 +261,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   profileCard: {
-    borderWidth: 2,
-    borderColor: colors.primary,
+    backgroundColor: colors.lightGray,
     borderRadius: 10,
     padding: spacing.md,
     flexDirection: 'row',
@@ -290,7 +289,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   verifiedBadge: {
-    backgroundColor: colors.black,
+    backgroundColor: colors.success,
     alignSelf: 'flex-start',
     borderRadius: 8,
     paddingHorizontal: spacing.sm,

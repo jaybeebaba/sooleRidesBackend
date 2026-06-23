@@ -12,6 +12,7 @@
     "axios": "^1.17.0",
     "expo": "~56.0.12",
     "expo-dev-client": "~56.0.20",
+    "expo-location": "~56.0.18",
     "expo-secure-store": "~56.0.4",
     "expo-status-bar": "~56.0.4",
     "nativewind": "^4.2.5",

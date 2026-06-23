@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.lightGray,
     borderRadius: 20,
     padding: spacing.md,
     marginBottom: spacing.md,

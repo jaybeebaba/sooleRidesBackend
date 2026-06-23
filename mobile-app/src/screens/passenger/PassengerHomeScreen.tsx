@@ -22,9 +22,13 @@ import { typography } from '../../theme/typography';
 import { Booking } from '../../types/booking.types';
 import { PopularRoute } from '../../types/ride.types';
 import { getPopularRoutes } from '../../api/rides.api';
+import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 
 export function PassengerHomeScreen() {
   const navigation = useNavigation<any>();
+  const currentLocation = useCurrentLocation();
+
+  
 
   const user = useAuthStore((state) => state.user);
   const setSearchParams = useRideSearchStore((state) => state.setSearchParams);
@@ -60,7 +64,6 @@ export function PassengerHomeScreen() {
   const fetchPopularRoutes = async () => {
   try {
     const data = await getPopularRoutes();
-    console.log('POPULAR ROUTES:', data);
     setPopularRoutes(data);
   } catch (error) {
     console.log('POPULAR ROUTES ERROR:', error);
@@ -124,7 +127,7 @@ export function PassengerHomeScreen() {
 
             <View style={styles.locationRow}>
               <FontAwesome name="map-marker" size={14} color={colors.gray} />
-              <Text style={styles.location}>Lagos, Nigeria</Text>
+              <Text style={styles.location}>{currentLocation}</Text>
             </View>
           </View>
 
@@ -265,9 +268,6 @@ export function PassengerHomeScreen() {
         From ₦{route.averagePrice.toLocaleString()}
       </Text>
 
-      <Text style={styles.routeTrips}>
-        {route.rideCount} completed trips
-      </Text>
     </TouchableOpacity>
   ))}
 </ScrollView>
