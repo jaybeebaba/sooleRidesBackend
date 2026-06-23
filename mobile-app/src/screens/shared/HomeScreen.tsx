@@ -1,16 +1,13 @@
 import { DriverHomeScreen } from '../driver/DriverHomeScreen';
 import { PassengerHomeScreen } from '../passenger/PassengerHomeScreen';
-import { useAuthStore } from '../../store/auth.store';
+import { useAppModeStore } from '../../store/appMode.store';
 
 export function HomeScreen() {
-  const user = useAuthStore((state) => state.user);
-console.log('user', user);
-  // const isApprovedDriver = user?.driverStatus === 'APPROVED';
-  // const isDriverMode = user?.activeMode === 'DRIVER';
+  const activeMode = useAppModeStore((state) => state.activeMode);
 
-  // if (isApprovedDriver && isDriverMode) {
-  //   return <DriverHomeScreen />;
-  // }
+  if (activeMode === 'DRIVER') {
+    return <DriverHomeScreen />;
+  }
 
   return <PassengerHomeScreen />;
 }

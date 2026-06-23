@@ -14,7 +14,7 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { hasSeenOnboarding } from '../../utils/tokenStorage';
+import { hasSeenOnboarding } from '../../utils/storage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 

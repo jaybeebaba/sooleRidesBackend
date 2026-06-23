@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { useAppModeStore } from '../../store/appMode.store';
 
 export function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -24,9 +25,13 @@ export function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const logoutUser = useAuthStore((state) => state.logoutUser);
 
-  const [activeMode, setActiveMode] = useState<'PASSENGER' | 'DRIVER'>(
-    'PASSENGER',
-  );
+  // const [activeMode, setActiveMode] = useState<'PASSENGER' | 'DRIVER'>(
+  //   'PASSENGER',
+  // );
+
+  const activeMode = useAppModeStore((state) => state.activeMode);
+  const setActiveMode = useAppModeStore((state) => state.setActiveMode);
+  const resetMode = useAppModeStore((state) => state.resetMode);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
   const isFullyVerified = Boolean(
@@ -59,9 +64,7 @@ export function ProfileScreen() {
       return;
     }
 
-    setActiveMode((current) =>
-      current === 'PASSENGER' ? 'DRIVER' : 'PASSENGER',
-    );
+    setActiveMode(activeMode === 'PASSENGER' ? 'DRIVER' : 'PASSENGER');
   };
 
   const handleLogout = () => {
@@ -75,7 +78,7 @@ export function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await logoutUser();
-
+          resetMode();
           navigation.reset({
             index: 0,
             routes: [{ name: 'Login' }],
@@ -125,7 +128,7 @@ export function ProfileScreen() {
               </View>
             ) : (
               <Text style={styles.driverHint}>
-                Become a driver after full verification.
+                Become a driver after full driver verification.
               </Text>
             )}
           </View>

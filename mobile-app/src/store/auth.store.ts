@@ -11,7 +11,7 @@ import {
   getAccessToken,
   getRefreshToken,
   saveTokens,
-} from '../utils/tokenStorage';
+} from '../utils/storage';
 
 type AuthState = {
   user: AuthUser | null;

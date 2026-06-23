@@ -17,7 +17,7 @@ import type { RootStackParamList } from '../../navigations/RootNavigator';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { markOnboardingSeen } from '../../utils/tokenStorage';
+import { markOnboardingSeen } from '../../utils/storage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
