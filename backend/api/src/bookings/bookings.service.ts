@@ -129,11 +129,18 @@ export class BookingsService {
     });
   }
 
-  async getMyBookings(userId: string) {
-    return this.prisma.booking.findMany({
-      where: {
-        passengerId: userId,
-      },
+ async getMyBookings(userId: string, page = 1, limit = 10) {
+  const skip = (page - 1) * limit;
+
+  const where = {
+    passengerId: userId,
+  };
+
+  const [data, total] = await Promise.all([
+    this.prisma.booking.findMany({
+      where,
+      skip,
+      take: limit,
       select: {
         id: true,
         seatsBooked: true,
@@ -141,6 +148,14 @@ export class BookingsService {
         serviceFee: true,
         status: true,
         createdAt: true,
+        review: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+            createdAt: true,
+          },
+        },
         ride: {
           select: {
             id: true,
@@ -177,20 +192,26 @@ export class BookingsService {
             reference: true,
           },
         },
-        review: {
-          select: {
-            id: true,
-            rating: true,
-            comment: true,
-            createdAt: true,
-          },
-        },
       },
       orderBy: {
         createdAt: 'desc',
       },
-    });
-  }
+    }),
+
+    this.prisma.booking.count({ where }),
+  ]);
+
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNextPage: page * limit < total,
+    },
+  };
+}
 
   async getBookingById(userId: string, bookingId: string) {
     const booking = await this.prisma.booking.findFirst({

@@ -53,12 +53,17 @@ export function PassengerHomeScreen() {
   );
 
   const fetchRecentCompletedRides = async () => {
-    try {
-      const data = await getMyBookings();
+    if (!isFullyVerified) {
+      setRecentCompletedRides([]);
+      return;
+    }
 
-      const completed = data
+    try {
+      const response = await getMyBookings(1);
+
+      const completed = response.data
         .filter((booking: Booking) => booking.status === 'COMPLETED')
-        .slice(0, 4);
+        .slice(0, 5);
 
       setRecentCompletedRides(completed);
     } catch (error: any) {
@@ -121,17 +126,18 @@ export function PassengerHomeScreen() {
         contentContainerStyle={styles.content}
       >
         <HomeHeader
-  fullName={user?.fullName}
-  imageUrl={undefined}
-  location={currentLocation}
-  notificationCount={0}
-  onNotificationPress={() => setNotificationsVisible(true)}
-/>
+          fullName={user?.fullName}
+          imageUrl={undefined}
+          location={currentLocation}
+          notificationCount={0}
+          onNotificationPress={() => setNotificationsVisible(true)}
+          onAvatarPress={() => navigation.navigate("ProfileTab")}
+        />
 
-<NotificationsModal
-  visible={notificationsVisible}
-  onClose={() => setNotificationsVisible(false)}
-/>
+        <NotificationsModal
+          visible={notificationsVisible}
+          onClose={() => setNotificationsVisible(false)}
+        />
 
         <VerificationCard
           visible={!isFullyVerified}
@@ -291,6 +297,7 @@ export function PassengerHomeScreen() {
                     bookingId: booking.id,
                     bookingStatus: booking.status,
                     totalAmount: booking.totalAmount,
+                    review: booking.review,
                   });
                 }
               }}

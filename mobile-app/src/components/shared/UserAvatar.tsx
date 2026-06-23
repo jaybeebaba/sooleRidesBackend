@@ -1,5 +1,5 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -8,13 +8,16 @@ type Props = {
   name?: string | null;
   imageUrl?: string | null;
   size?: number;
+  onPress?: () => void;
 };
 
-export function UserAvatar({ name, imageUrl, size = 46 }: Props) {
+export function UserAvatar({ name, imageUrl, size = 46, onPress }: Props) {
   const initial = name?.trim()?.[0]?.toUpperCase();
 
   return (
-    <View
+    <TouchableOpacity
+    activeOpacity={0.8}
+    onPress={onPress}
       style={[
         styles.avatar,
         {
@@ -38,7 +41,7 @@ export function UserAvatar({ name, imageUrl, size = 46 }: Props) {
       ) : (
         <FontAwesome name="user" size={size * 0.45} color={colors.white} />
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 

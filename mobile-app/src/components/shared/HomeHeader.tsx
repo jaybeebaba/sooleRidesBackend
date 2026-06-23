@@ -13,6 +13,8 @@ type Props = {
   location?: string;
   notificationCount?: number;
   onNotificationPress?: () => void;
+  onAvatarPress?: () => void;
+
 };
 
 export function HomeHeader({
@@ -21,12 +23,13 @@ export function HomeHeader({
   location = 'Location unavailable',
   notificationCount = 0,
   onNotificationPress,
+  onAvatarPress,
 }: Props) {
   const firstName = fullName?.split(' ')[0] || 'Passenger';
 
   return (
     <View style={styles.header}>
-      <UserAvatar name={fullName} imageUrl={imageUrl} />
+      <UserAvatar name={fullName} imageUrl={imageUrl} onPress={onAvatarPress} />
 
       <View style={styles.headerText}>
         <Text style={styles.greeting}>Hi, {firstName}</Text>

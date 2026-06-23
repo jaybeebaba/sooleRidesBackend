@@ -11,8 +11,19 @@ export async function createBooking(payload: CreateBookingPayload) {
   return response.data;
 }
 
-export async function getMyBookings() {
-  const response = await api.get('/bookings/my-bookings');
+// export async function getMyBookings() {
+//   const response = await api.get('/bookings/my-bookings');
+
+//   return response.data;
+// }
+
+export async function getMyBookings(page = 1, limit = 10) {
+  const response = await api.get('/bookings/my-bookings', {
+    params: {
+      page,
+      limit,
+    },
+  });
 
   return response.data;
 }
