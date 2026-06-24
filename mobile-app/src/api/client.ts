@@ -7,6 +7,17 @@ import {
   saveTokens,
 } from '../utils/storage';
 
+let memoryAccessToken: string | null = null;
+let memoryRefreshToken: string | null = null;
+
+export function setMemoryAccessToken(token: string | null) {
+  memoryAccessToken = token;
+}
+
+export function setMemoryRefreshToken(token: string | null) {
+  memoryRefreshToken = token;
+}
+
 export const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   timeout: 15000,
@@ -23,15 +34,19 @@ const refreshApi = axios.create({
   },
 });
 
-api.interceptors.request.use(async (config) => {
-  const token = await getAccessToken();
+api.interceptors.request.use(
+  async (config) => {
+    const storedToken = await getAccessToken();
+    const token = memoryAccessToken || storedToken;
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
-  return config;
-});
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 api.interceptors.response.use(
   (response) => response,
@@ -46,16 +61,22 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const storedRefreshToken = await getRefreshToken();
+        const storedRefreshToken =
+          memoryRefreshToken || (await getRefreshToken());
 
         if (!storedRefreshToken) {
           await clearTokens();
+          setMemoryAccessToken(null);
+          setMemoryRefreshToken(null);
           return Promise.reject(error);
         }
 
         const { data } = await refreshApi.post('/auth/refresh', {
           refreshToken: storedRefreshToken,
         });
+
+        setMemoryAccessToken(data.accessToken);
+        setMemoryRefreshToken(data.refreshToken);
 
         await saveTokens(data.accessToken, data.refreshToken);
 
@@ -64,6 +85,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         await clearTokens();
+        setMemoryAccessToken(null);
+        setMemoryRefreshToken(null);
+
         return Promise.reject(refreshError);
       }
     }

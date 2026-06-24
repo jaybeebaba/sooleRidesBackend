@@ -1,4 +1,5 @@
 import { FontAwesome } from '@expo/vector-icons';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
   Alert,
@@ -10,8 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { KeyboardAwareScreen } from '../../components/layout/KeyboardAwareScreen';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppInput } from '../../components/ui/AppInput';
 import type { RootStackParamList } from '../../navigations/RootNavigator';
@@ -19,16 +20,12 @@ import { useAuthStore } from '../../store/auth.store';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { KeyboardAwareScreen } from '../../components/layout/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
   const loginUser = useAuthStore((state) => state.loginUser);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const loadUser = useAuthStore((state) => state.loadUser);
-
-  
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,17 +41,17 @@ export function LoginScreen({ navigation }: Props) {
 
     try {
       await loginUser(
-  {
-    email: email.trim().toLowerCase(),
-    password,
-  },
-  rememberMe,
-);
-await loadUser()
+        {
+          email: email.trim().toLowerCase(),
+          password,
+        },
+        rememberMe,
+      );
+
       navigation.reset({
-  index: 0,
-  routes: [{ name: 'Home' }],
-});
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     } catch {
       Alert.alert('Login failed', 'Please check your details and try again.');
     }
@@ -137,7 +134,9 @@ await loadUser()
               <Text style={styles.rememberText}>Remember me</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>
